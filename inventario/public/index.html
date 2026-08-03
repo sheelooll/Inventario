@@ -6,7 +6,7 @@
   <title>Inventario CESFAM</title>
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/components.css">
-  <script src="/xlsx.full.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -53,6 +53,7 @@
         <li><a href="#movimientos" class="nav-link" data-view="movimientos">🔄 Movimientos</a></li>
         <li><a href="#categorias"  class="nav-link" data-view="categorias">🏷️ Categorías</a></li>
         <li><a href="#reportes"    class="nav-link" data-view="reportes">📊 Reportes</a></li>
+        <li><a href="#usuarios"    class="nav-link" data-view="usuarios">👥 Usuarios</a></li>
       </ul>
     </nav>
 
@@ -190,6 +191,25 @@
               </tr>
             </thead>
             <tbody id="tbody-reporte"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== USUARIOS ===== -->
+      <section id="view-usuarios" class="view hidden">
+        <div class="view-header">
+          <h2>Usuarios</h2>
+          <button id="btn-nuevo-usuario" class="btn btn-primary">+ Nuevo usuario</button>
+        </div>
+        <div class="tabla-container">
+          <table class="tabla">
+            <thead><tr>
+              <th>Nombre / Correo</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr></thead>
+            <tbody id="tbody-usuarios"></tbody>
           </table>
         </div>
       </section>

@@ -27,7 +27,10 @@ export function iniciarAuth(onLogin) {
       const usuario_data = await authApi.login(usuario, password);
       onLogin(usuario_data);
     } catch (err) {
-      errDiv.textContent = err.message;
+      const code = err.code || '';
+      errDiv.textContent = (code.includes('invalid-credential') || code.includes('wrong-password') || code.includes('user-not-found'))
+        ? 'Usuario o contraseña incorrectos'
+        : err.message;
       errDiv.classList.remove('hidden');
     } finally {
       loginBtn.disabled = false;
