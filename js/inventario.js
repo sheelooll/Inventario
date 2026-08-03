@@ -123,12 +123,12 @@ function renderTabla() {
       }
 
       const accionesBotones = `
-        <button class="btn btn-secondary btn-sm" onclick="window._movLote(${p.id},${loteId ?? 'null'})">± Stock</button>
-        ${loteId ? `<button class="btn btn-secondary btn-sm" onclick="window._editLote(${loteId},${p.id})">✎</button>` : ''}
+        <button class="btn btn-secondary btn-sm" onclick="window._movLote('${p.id}',${loteId ? `'${loteId}'` : 'null'})">± Stock</button>
+        ${loteId ? `<button class="btn btn-secondary btn-sm" onclick="window._editLote('${loteId}','${p.id}')">✎</button>` : ''}
         ${esFirst ? `
-          <button class="btn btn-secondary btn-sm" onclick="window._addLote(${p.id})" title="Agregar nuevo lote">+Lote</button>
-          <button class="btn btn-secondary btn-sm" onclick="window._editProducto(${p.id})">Editar</button>
-          <button class="btn btn-danger btn-sm"    onclick="window._delProducto(${p.id})">✕</button>
+          <button class="btn btn-secondary btn-sm" onclick="window._addLote('${p.id}')" title="Agregar nuevo lote">+Lote</button>
+          <button class="btn btn-secondary btn-sm" onclick="window._editProducto('${p.id}')">Editar</button>
+          <button class="btn btn-danger btn-sm"    onclick="window._delProducto('${p.id}')">✕</button>
         ` : ''}
       `;
 

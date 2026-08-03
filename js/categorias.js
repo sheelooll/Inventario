@@ -29,8 +29,8 @@ function renderTabla() {
       <td><strong>${esc(c.nombre)}</strong></td>
       <td>${esc(c.descripcion||'—')}</td>
       <td class="acciones">
-        <button class="btn btn-secondary btn-sm" onclick="window._editCat(${c.id})">Editar</button>
-        <button class="btn btn-danger btn-sm"    onclick="window._delCat(${c.id})">Eliminar</button>
+        <button class="btn btn-secondary btn-sm" onclick="window._editCat('${c.id}')">Editar</button>
+        <button class="btn btn-danger btn-sm"    onclick="window._delCat('${c.id}')">Eliminar</button>
       </td>
     </tr>
   `).join('');

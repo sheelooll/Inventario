@@ -3,6 +3,7 @@ import { iniciarInventario }  from './inventario.js';
 import { iniciarCategorias }  from './categorias.js';
 import { iniciarMovimientos } from './movimientos.js';
 import { iniciarReportes }    from './reportes.js';
+import { iniciarUsuarios }    from './usuarios.js';
 
 const loginScreen = document.getElementById('login-screen');
 const appEl       = document.getElementById('app');
@@ -16,6 +17,7 @@ const VISTAS = {
   categorias:  iniciarCategorias,
   movimientos: iniciarMovimientos,
   reportes:    iniciarReportes,
+  usuarios:    iniciarUsuarios,
 };
 
 const iniciadas = new Set();
@@ -29,7 +31,12 @@ function mostrarApp(usuario) {
   window.__sesionActiva = true;
   loginScreen.classList.add('hidden');
   appEl.classList.remove('hidden');
-  userDisplay.textContent = `${usuario.nombre} (${usuario.rol})`;
+  userDisplay.textContent = usuario.nombre;
+
+  // Mostrar enlace Usuarios solo para admins
+  const navUs = document.querySelector('.nav-link[data-view="usuarios"]');
+  if (navUs) navUs.parentElement.style.display = usuario.rol === 'admin' ? '' : 'none';
+
   const hash = location.hash.slice(1);
   navegarA(VISTAS[hash] ? hash : 'inventario');
 }
