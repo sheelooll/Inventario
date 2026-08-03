@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <script>
-  // GitHub Pages SPA redirect: preserva el hash y redirige a index.html
+  // GitHub Pages SPA redirect: redirige a index.html preservando el hash
+  const base = '/' + window.location.pathname.split('/')[1];
   const hash = window.location.hash || '';
-  window.location.replace('/' + hash);
+  window.location.replace(base + '/' + hash);
 </script>
 </head><body></body></html>
