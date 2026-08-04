@@ -1,0 +1,28 @@
+name: Alerta diaria de stock
+
+on:
+  schedule:
+    - cron: '0 13 * * *'  # 09:00 AM hora Chile (UTC-4)
+  workflow_dispatch:        # permite ejecutarlo manualmente desde GitHub
+
+jobs:
+  alertar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias
+        run: npm install firebase-admin
+        working-directory: inventario
+
+      - name: Enviar alerta de stock
+        run: node scripts/alertar-stock.js
+        working-directory: inventario
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
