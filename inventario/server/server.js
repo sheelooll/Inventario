@@ -13,7 +13,7 @@ app.use('/xlsx.full.min.js', express.static(
 ));
 
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'inventario-cesfam-2024-secret',
+  secret: process.env.SESSION_SECRET || 'inventario-laboratorio-2024-secret',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 8 * 60 * 60 * 1000 } // 8 horas

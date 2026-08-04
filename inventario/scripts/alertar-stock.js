@@ -52,7 +52,7 @@ async function enviarAlerta() {
   let html = `
     <div style="font-family:sans-serif;max-width:680px;margin:0 auto;color:#111">
       <div style="background:#1e40af;color:#fff;padding:20px 24px;border-radius:8px 8px 0 0">
-        <h1 style="margin:0;font-size:20px">🏥 Alerta de Stock — Inventario CESFAM</h1>
+        <h1 style="margin:0;font-size:20px">🔬 Alerta de Stock — Laboratorio Inventory</h1>
         <p style="margin:4px 0 0;font-size:14px;opacity:.85">${hoy}</p>
       </div>
       <div style="background:#f9fafb;padding:20px 24px;border-radius:0 0 8px 8px">`;
@@ -80,9 +80,9 @@ async function enviarAlerta() {
     method:  'POST',
     headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from:    'Inventario CESFAM <onboarding@resend.dev>',
+      from:    'Laboratorio Inventory <onboarding@resend.dev>',
       to:      [ALERT_EMAIL],
-      subject: `⚠️ Stock CESFAM: ${criticos.length} crítico${criticos.length !== 1 ? 's' : ''}, ${bajos.length} bajo${bajos.length !== 1 ? 's' : ''}`,
+      subject: `⚠️ Stock Laboratorio: ${criticos.length} crítico${criticos.length !== 1 ? 's' : ''}, ${bajos.length} bajo${bajos.length !== 1 ? 's' : ''}`,
       html,
     }),
   });

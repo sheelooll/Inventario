@@ -1,5 +1,5 @@
 {
-  "name": "inventario-cesfam",
+  "name": "inventario-laboratorio",
   "version": "1.0.0",
   "description": "Sistema de control de inventario para laboratorio/bodega",
   "main": "server/server.js",
