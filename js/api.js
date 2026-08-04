@@ -4,7 +4,7 @@ import {
   query, where, orderBy, limit as fbLimit, writeBatch, serverTimestamp, Timestamp,
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js';
 import {
-  signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile,
 } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 
 // Convierte Firestore Timestamps a ISO string y agrega id
@@ -31,12 +31,14 @@ async function perfilFirestore(user) {
   if (snap.exists()) {
     const d = snap.data();
     if (d.activo === false) { await signOut(authFB); throw new Error('Usuario desactivado'); }
+    // Sincronizar displayName para que aparezca en movimientos
+    if (d.nombre && user.displayName !== d.nombre) {
+      await updateProfile(user, { displayName: d.nombre });
+    }
     return { id: user.uid, nombre: d.nombre || user.email.split('@')[0], rol: d.rol || 'usuario', email: user.email };
   }
-  // Primer inicio de sesión: crear perfil admin
-  const perfil = { nombre: user.displayName || user.email.split('@')[0], email: user.email, rol: 'admin', activo: true };
-  await setDoc(doc(db, 'usuarios', user.uid), { ...perfil, creado_en: serverTimestamp() });
-  return { id: user.uid, ...perfil };
+  await signOut(authFB);
+  throw new Error('Usuario no autorizado');
 }
 
 // ===== Auth =====
@@ -82,14 +84,36 @@ export const usuarios = {
     return { id: data.localId };
   },
 
-  // No se puede eliminar desde cliente; se desactiva en Firestore
   desactivar: async (id) => {
     await updateDoc(doc(db, 'usuarios', String(id)), { activo: false });
     return { ok: true };
   },
-
   activar: async (id) => {
     await updateDoc(doc(db, 'usuarios', String(id)), { activo: true });
+    return { ok: true };
+  },
+  eliminar: async (id) => {
+    await deleteDoc(doc(db, 'usuarios', String(id)));
+    return { ok: true };
+  },
+};
+
+// ===== Ubicaciones =====
+export const ubicaciones = {
+  listar: async () => {
+    const snap = await getDocs(query(collection(db, 'ubicaciones'), orderBy('nombre')));
+    return snap.docs.map(toObj);
+  },
+  crear: async ({ nombre }) => {
+    const r = await addDoc(collection(db, 'ubicaciones'), { nombre, creado_en: serverTimestamp() });
+    return { id: r.id };
+  },
+  editar: async (id, { nombre }) => {
+    await updateDoc(doc(db, 'ubicaciones', String(id)), { nombre });
+    return { ok: true };
+  },
+  eliminar: async (id) => {
+    await deleteDoc(doc(db, 'ubicaciones', String(id)));
     return { ok: true };
   },
 };
@@ -257,7 +281,7 @@ export const lotes = {
     return sortLotes(lts);
   },
 
-  crear: async ({ producto_id, codigo_lote, cantidad, vencimiento }) => {
+  crear: async ({ producto_id, codigo_lote, cantidad, vencimiento, ubicacion_id, ubicacion_nombre, numero_compra }) => {
     producto_id = String(producto_id);
     cantidad    = Number(cantidad);
     if (cantidad <= 0) throw new Error('Cantidad debe ser mayor a 0');
@@ -283,7 +307,13 @@ export const lotes = {
       loteId = existing.id;
     } else {
       const newRef = doc(collection(db, 'lotes'));
-      const newL   = { producto_id, codigo_lote: codigo_lote || null, cantidad, vencimiento: vencimiento || null };
+      const newL   = {
+        producto_id, codigo_lote: codigo_lote || null, cantidad,
+        vencimiento:      vencimiento      || null,
+        ubicacion_id:     ubicacion_id     || null,
+        ubicacion_nombre: ubicacion_nombre || null,
+        numero_compra:    numero_compra    || null,
+      };
       batch.set(newRef, { ...newL, fecha_ingreso: serverTimestamp() });
       modLotes.push({ id: newRef.id, ...newL });
       loteId = newRef.id;
@@ -305,7 +335,7 @@ export const lotes = {
     return { ok: true, lote: { id: loteId } };
   },
 
-  editar: async (id, { codigo_lote, vencimiento }) => {
+  editar: async (id, { codigo_lote, vencimiento, ubicacion_id, ubicacion_nombre, numero_compra }) => {
     const loteRef  = doc(db, 'lotes', String(id));
     const loteSnap = await getDoc(loteRef);
     if (!loteSnap.exists()) throw new Error('Lote no encontrado');
@@ -313,11 +343,16 @@ export const lotes = {
     const producto_id = loteSnap.data().producto_id;
     const allLotes    = await getLotesProducto(producto_id);
 
+    const campos = {
+      codigo_lote:      codigo_lote      || null,
+      vencimiento:      vencimiento      || null,
+      ubicacion_id:     ubicacion_id     || null,
+      ubicacion_nombre: ubicacion_nombre || null,
+      numero_compra:    numero_compra    || null,
+    };
     const batch = writeBatch(db);
-    batch.update(loteRef, { codigo_lote: codigo_lote || null, vencimiento: vencimiento || null });
-    const modLotes = allLotes.map(l => l.id === id
-      ? { ...l, codigo_lote: codigo_lote || null, vencimiento: vencimiento || null }
-      : l);
+    batch.update(loteRef, campos);
+    const modLotes = allLotes.map(l => l.id === id ? { ...l, ...campos } : l);
     batch.update(doc(db, 'productos', producto_id), calcSync(modLotes));
     await batch.commit();
     return { ok: true };
@@ -343,7 +378,7 @@ export const lotes = {
 // ===== Movimientos (lógica central) =====
 
 async function registrarMovimiento(data) {
-  const { tipo, motivo, codigo_lote, vencimiento_lote, lote_id, cajas, unidades_por_caja } = data;
+  const { tipo, motivo, codigo_lote, vencimiento_lote, lote_id, ubicacion_id, ubicacion_nombre, numero_compra } = data;
   const producto_id = String(data.producto_id);
   const cant        = Number(data.cantidad);
   const u           = currentUser();
@@ -368,7 +403,13 @@ async function registrarMovimiento(data) {
       loteId   = existing.id;
     } else {
       const newRef = doc(collection(db, 'lotes'));
-      const newL   = { producto_id, codigo_lote: codigo_lote || null, cantidad: cant, vencimiento: vencimiento_lote || null };
+      const newL   = {
+        producto_id, codigo_lote: codigo_lote || null, cantidad: cant,
+        vencimiento:      vencimiento_lote || null,
+        ubicacion_id:     ubicacion_id     || null,
+        ubicacion_nombre: ubicacion_nombre || null,
+        numero_compra:    numero_compra    || null,
+      };
       batch.set(newRef, { ...newL, fecha_ingreso: serverTimestamp() });
       modLotes.push({ id: newRef.id, ...newL });
       loteId = newRef.id;
@@ -447,18 +488,16 @@ async function registrarMovimiento(data) {
 
   batch.set(doc(collection(db, 'movimientos')), {
     producto_id,
-    lote_id:         loteId || null,
+    lote_id:          loteId || null,
     tipo,
-    cajas:           cajas           ? Number(cajas)           : null,
-    unidades_por_caja: unidades_por_caja ? Number(unidades_por_caja) : null,
-    cantidad:        cant,
+    cantidad:         cant,
     stock_resultante: sync.cantidad,
-    usuario_id:      u?.uid || '',
-    usuario_nombre:  u?.displayName || u?.email?.split('@')[0] || '',
-    producto_nombre: prod.nombre,
+    usuario_id:       u?.uid || '',
+    usuario_nombre:   u?.displayName || u?.email?.split('@')[0] || '',
+    producto_nombre:  prod.nombre,
     categoria_nombre: prod.categoria_nombre || '',
-    fecha:           serverTimestamp(),
-    motivo:          motivo || null,
+    fecha:            serverTimestamp(),
+    motivo:           motivo || null,
   });
 
   await batch.commit();
@@ -502,13 +541,18 @@ export const movimientos = {
     const resultados = [], errores = [];
     for (const l of (lineas || [])) {
       if (!l?.producto_id) continue;
-      const cantidad = Number(l.cajas) * Number(l.unidades_por_caja);
+      const cantidad = Number(l.cantidad);
       if (cantidad <= 0) { errores.push('Línea inválida'); continue; }
       try {
         const r = await registrarMovimiento({
-          producto_id: l.producto_id, tipo: 'entrada', cantidad,
-          cajas: l.cajas, unidades_por_caja: l.unidades_por_caja,
-          codigo_lote: l.codigo_lote || null, vencimiento_lote: l.vencimiento_lote || null,
+          producto_id:   l.producto_id,
+          tipo:          'entrada',
+          cantidad,
+          codigo_lote:   l.codigo_lote   || null,
+          vencimiento_lote: l.vencimiento_lote || null,
+          ubicacion_id:     l.ubicacion_id     || null,
+          ubicacion_nombre: l.ubicacion_nombre || null,
+          numero_compra: l.numero_compra || null,
           motivo,
         });
         resultados.push({ producto_id: l.producto_id, cantidad, stock_resultante: r.stock_resultante });

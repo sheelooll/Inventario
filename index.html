@@ -63,7 +63,10 @@
       <section id="view-inventario" class="view hidden">
         <div class="view-header">
           <h2>Inventario</h2>
-          <button id="btn-nuevo-producto" class="btn btn-primary">+ Nuevo Producto</button>
+          <div style="display:flex;gap:.5rem">
+            <button id="btn-importar-excel" class="btn btn-secondary">📂 Importar Excel</button>
+            <button id="btn-nuevo-producto" class="btn btn-primary">+ Nuevo Producto</button>
+          </div>
         </div>
         <div id="inventario-alertas" class="alertas-banner"></div>
         <div class="filtros-bar">
@@ -91,6 +94,7 @@
                 <th class="text-right">Cantidad</th>
                 <th>Estado</th>
                 <th>Vencimiento</th>
+                <th>Ubicación</th>
                 <th class="text-center">Acciones</th>
               </tr>
             </thead>
@@ -117,6 +121,22 @@
             <tbody id="tbody-categorias"></tbody>
           </table>
         </div>
+
+        <div class="view-header" style="margin-top:2rem">
+          <h2>Ubicaciones</h2>
+          <button id="btn-nueva-ubicacion" class="btn btn-primary">+ Nueva Ubicación</button>
+        </div>
+        <div class="tabla-container">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-ubicaciones"></tbody>
+          </table>
+        </div>
       </section>
 
       <!-- ===== MOVIMIENTOS ===== -->
@@ -124,7 +144,7 @@
         <div class="view-header">
           <h2>Movimientos</h2>
           <div style="display:flex;gap:.5rem">
-            <button id="btn-ingreso-caja" class="btn btn-primary">📥 Ingresar por Caja</button>
+            <button id="btn-ingreso-caja" class="btn btn-primary">📥 Ingreso Masivo</button>
             <button id="btn-exportar-movimientos" class="btn btn-secondary btn-sm">⬇ Excel</button>
           </div>
         </div>

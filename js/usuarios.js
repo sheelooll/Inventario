@@ -40,7 +40,10 @@ function renderTabla() {
         <td><strong>${esc(u.nombre)}</strong><br><span class="text-muted" style="font-size:.78rem">${esc(u.email||'')}</span></td>
         <td>${rolBadge}</td>
         <td>${badge}</td>
-        <td class="acciones">${btnToggle}</td>
+        <td class="acciones">
+          ${btnToggle}
+          <button class="btn btn-danger btn-sm" onclick="window._eliminarUsr('${u.id}')">Eliminar</button>
+        </td>
       </tr>`;
   }).join('');
 }
@@ -114,6 +117,14 @@ window._activarUsr = async (id) => {
   const ok = await confirmar(`¿Reactivar a <strong>${esc(u?.nombre || id)}</strong>?`);
   if (!ok) return;
   try { await usrApi.activar(id); toast('Usuario activado'); cargar(); }
+  catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+
+window._eliminarUsr = async (id) => {
+  const u  = _usuarios.find(u => u.id === id);
+  const ok = await confirmar(`¿Eliminar permanentemente a <strong>${esc(u?.nombre || id)}</strong>?<br><small>Esta acción no se puede deshacer.</small>`);
+  if (!ok) return;
+  try { await usrApi.eliminar(id); toast('Usuario eliminado'); cargar(); }
   catch (e) { toast('Error: ' + e.message, 'error'); }
 };
 
