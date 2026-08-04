@@ -76,17 +76,17 @@ function renderTabla() {
   }).join('');
 }
 
-// ===== Modal ingreso por caja =====
+// ===== Modal ingreso masivo =====
 async function abrirModalIngresoCaja() {
   _productos = await prodApi.listar().catch(() => []);
 
   const opcs = _productos.map(p =>
-    `<option value="${p.id}" data-upc="${p.unidades_por_caja}">${esc(p.nombre)} (stock: ${p.cantidad})</option>`
+    `<option value="${p.id}">${esc(p.nombre)} (stock: ${p.cantidad})</option>`
   ).join('');
 
   abrirModal(`
     <div class="modal-header">
-      <h3>📥 Ingresar por Caja</h3>
+      <h3>📥 Ingreso Masivo</h3>
       <button class="modal-close" aria-label="Cerrar">✕</button>
     </div>
 
@@ -108,15 +108,14 @@ async function abrirModalIngresoCaja() {
     </div>
   `, { size: 'lg' });
 
-  // Estado local del modal
   const lineas = [];
 
   function agregarLineaModal() {
     const idx = lineas.length;
-    lineas.push({ producto_id: '', cajas: 1, unidades_por_caja: 1 });
+    lineas.push({ producto_id: '', cantidad: 0, codigo_lote: '', vencimiento_lote: '', ubicacion: '', numero_compra: '' });
 
     const div = document.createElement('div');
-    div.style.cssText = 'display:grid;grid-template-columns:1fr 80px 100px 90px auto;gap:.5rem;align-items:end';
+    div.style.cssText = 'display:grid;grid-template-columns:1.5fr 80px 100px 100px 100px 100px auto;gap:.4rem;align-items:end';
     div.innerHTML = `
       <div class="form-group" style="margin:0">
         <label style="font-size:.78rem">Producto</label>
@@ -125,37 +124,41 @@ async function abrirModalIngresoCaja() {
         </select>
       </div>
       <div class="form-group" style="margin:0">
-        <label style="font-size:.78rem">Cajas</label>
-        <input type="number" data-field="cajas" value="1" min="1" style="font-size:.82rem">
+        <label style="font-size:.78rem">Cantidad</label>
+        <input type="number" data-field="cantidad" value="" min="1" style="font-size:.82rem">
       </div>
       <div class="form-group" style="margin:0">
-        <label style="font-size:.78rem">Unid./caja</label>
-        <input type="number" data-field="upc" value="1" min="1" style="font-size:.82rem">
+        <label style="font-size:.78rem">Lote</label>
+        <input type="text" data-field="codigo_lote" placeholder="Opcional" style="font-size:.82rem">
       </div>
       <div class="form-group" style="margin:0">
-        <label style="font-size:.78rem">Total</label>
-        <div data-total style="padding:.45rem 0;font-weight:700;color:var(--color-primary);font-size:.85rem">—</div>
+        <label style="font-size:.78rem">Vencimiento</label>
+        <input type="date" data-field="vencimiento_lote" style="font-size:.82rem">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:.78rem">Ubicación</label>
+        <input type="text" data-field="ubicacion" placeholder="Opcional" style="font-size:.82rem">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:.78rem">N° compra</label>
+        <input type="text" data-field="numero_compra" placeholder="Opcional" style="font-size:.82rem">
       </div>
       <div style="padding-bottom:.45rem">
         <button type="button" class="btn btn-danger btn-sm" data-remove>✕</button>
       </div>
     `;
 
-    div.querySelector('[data-field="producto_id"]').addEventListener('change', e => {
-      const upc = e.target.selectedOptions[0]?.dataset.upc || 1;
-      div.querySelector('[data-field="upc"]').value = upc;
-      lineas[idx].producto_id = e.target.value;
-      lineas[idx].unidades_por_caja = Number(upc);
-      recalcTotal(div, idx, lineas);
+    ['producto_id','cantidad','codigo_lote','vencimiento_lote','ubicacion','numero_compra'].forEach(field => {
+      div.querySelector(`[data-field="${field}"]`).addEventListener('change', e => {
+        lineas[idx][field] = e.target.value;
+        if (field === 'cantidad') actualizarTotalGeneral(lineas);
+      });
+      div.querySelector(`[data-field="${field}"]`).addEventListener('input', e => {
+        lineas[idx][field] = e.target.value;
+        if (field === 'cantidad') actualizarTotalGeneral(lineas);
+      });
     });
-    div.querySelector('[data-field="cajas"]').addEventListener('input', e => {
-      lineas[idx].cajas = Number(e.target.value) || 0;
-      recalcTotal(div, idx, lineas);
-    });
-    div.querySelector('[data-field="upc"]').addEventListener('input', e => {
-      lineas[idx].unidades_por_caja = Number(e.target.value) || 0;
-      recalcTotal(div, idx, lineas);
-    });
+
     div.querySelector('[data-remove]').addEventListener('click', () => {
       div.remove(); lineas.splice(idx, 1, null); actualizarTotalGeneral(lineas);
     });
@@ -163,26 +166,18 @@ async function abrirModalIngresoCaja() {
     document.getElementById('modal-ingreso-lineas').appendChild(div);
   }
 
-  function recalcTotal(div, idx, lineas) {
-    const l = lineas[idx];
-    const t = (l?.cajas || 0) * (l?.unidades_por_caja || 0);
-    div.querySelector('[data-total]').textContent = t > 0 ? `${fmtNum(t)} u.` : '—';
-    actualizarTotalGeneral(lineas);
-  }
-
   function actualizarTotalGeneral(lineas) {
-    const total = lineas.reduce((s, l) => s + (l ? (l.cajas || 0) * (l.unidades_por_caja || 0) : 0), 0);
+    const total = lineas.reduce((s, l) => s + (l ? Number(l.cantidad) || 0 : 0), 0);
     document.getElementById('modal-ingreso-total').textContent =
       total > 0 ? `Total: ${fmtNum(total)} unidades` : '';
   }
 
-  // Agregar primera línea y listeners
   agregarLineaModal();
   document.getElementById('modal-btn-agregar-linea').addEventListener('click', agregarLineaModal);
 
   document.getElementById('modal-btn-confirmar-ingreso').addEventListener('click', async () => {
-    const motivo = document.getElementById('modal-ingreso-motivo').value.trim();
-    const validas = lineas.filter(l => l && l.producto_id && l.cajas > 0 && l.unidades_por_caja > 0);
+    const motivo  = document.getElementById('modal-ingreso-motivo').value.trim();
+    const validas = lineas.filter(l => l && l.producto_id && Number(l.cantidad) > 0);
 
     if (!validas.length) { toast('Agrega al menos un producto con cantidad válida', 'warning'); return; }
 

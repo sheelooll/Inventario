@@ -29,20 +29,27 @@ function mostrarLogin() {
 
 function mostrarApp(usuario) {
   window.__sesionActiva = true;
+  window.__usuarioActivo = usuario;
   loginScreen.classList.add('hidden');
   appEl.classList.remove('hidden');
   userDisplay.textContent = usuario.nombre;
 
-  // Mostrar enlace Usuarios solo para admins
-  const navUs = document.querySelector('.nav-link[data-view="usuarios"]');
-  if (navUs) navUs.parentElement.style.display = usuario.rol === 'admin' ? '' : 'none';
+  // Solo admins ven todo; usuarios normales solo ven Inventario
+  const soloAdmin = ['movimientos', 'categorias', 'reportes', 'usuarios'];
+  document.querySelectorAll('.nav-link').forEach(a => {
+    const esAdminOnly = soloAdmin.includes(a.dataset.view);
+    a.parentElement.style.display = (esAdminOnly && usuario.rol !== 'admin') ? 'none' : '';
+  });
 
   const hash = location.hash.slice(1);
-  navegarA(VISTAS[hash] ? hash : 'inventario');
+  const destino = (usuario.rol !== 'admin' && hash !== 'inventario') ? 'inventario' : (VISTAS[hash] ? hash : 'inventario');
+  navegarA(destino);
 }
 
 function navegarA(vista) {
   if (!VISTAS[vista]) vista = 'inventario';
+  const u = window.__usuarioActivo;
+  if (u && u.rol !== 'admin' && vista !== 'inventario') vista = 'inventario';
 
   document.querySelectorAll('.nav-link').forEach(a =>
     a.classList.toggle('active', a.dataset.view === vista)

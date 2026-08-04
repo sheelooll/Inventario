@@ -1,14 +1,16 @@
-import { productos as prodApi, categorias as catApi, movimientos as movApi, lotes as lotesApi } from './api.js';
+import { productos as prodApi, categorias as catApi, movimientos as movApi, lotes as lotesApi, ubicaciones as ubApi } from './api.js';
 import { toast, abrirModal, cerrarModal, confirmar, estadoBadge, fmtFechaSolo, fmtNum } from './ui.js';
 
 let _productos  = [];
 let _categorias = [];
+let _ubicaciones = [];
 
 export function iniciarInventario() {
   cargarCategoriasFiltro();
   cargar();
 
   document.getElementById('btn-nuevo-producto').addEventListener('click', () => abrirFormProducto(null));
+  document.getElementById('btn-importar-excel').addEventListener('click', abrirModalImportarExcel);
   document.getElementById('filtro-buscar').addEventListener('input', renderTabla);
   document.getElementById('filtro-estado').addEventListener('change', renderTabla);
   document.getElementById('filtro-categoria').addEventListener('change', renderTabla);
@@ -18,7 +20,7 @@ export function iniciarInventario() {
 
 async function cargar() {
   try {
-    [_productos, _categorias] = await Promise.all([prodApi.listar(), catApi.listar()]);
+    [_productos, _categorias, _ubicaciones] = await Promise.all([prodApi.listar(), catApi.listar(), ubApi.listar()]);
     renderAlertas();
     renderTabla();
     actualizarFiltroCategoria();
@@ -82,7 +84,7 @@ function renderTabla() {
   const tbody = document.getElementById('tbody-inventario');
   const lista = filtrados();
   if (!lista.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay productos que mostrar</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No hay productos que mostrar</td></tr>';
     return;
   }
 
@@ -113,6 +115,9 @@ function renderTabla() {
             : `<div class="prod-thumb-placeholder" title="Sin foto">📷</div>`)
         : '';
 
+      const ubicNombre   = lote?.ubicacion_nombre || null;
+      const numCompra    = lote?.numero_compra    || null;
+
       let nombreCell;
       if (esFirst) {
         nombreCell = `<strong>${esc(p.nombre)}</strong>`;
@@ -121,6 +126,7 @@ function renderTabla() {
       } else {
         nombreCell = `<span style="padding-left:.75rem;color:var(--color-text-muted)">↳</span> <span class="lote-badge">${codLote ? esc(codLote) : '(sin código)'}</span>`;
       }
+      if (numCompra) nombreCell += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
 
       const accionesBotones = `
         <button class="btn btn-secondary btn-sm" onclick="window._movLote('${p.id}',${loteId ? `'${loteId}'` : 'null'})">± Stock</button>
@@ -140,6 +146,7 @@ function renderTabla() {
           <td class="text-right">${fmtNum(cantLote)}</td>
           <td>${estadoBadge(estadoLote, vencido, por_vencer)}</td>
           <td>${fmtFechaSolo(vencLote)}</td>
+          <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>
           <td class="acciones">${accionesBotones}</td>
         </tr>
       `);
@@ -184,6 +191,14 @@ function abrirFormProducto(id) {
         <div class="form-group">
           <label>Vencimiento lote inicial</label>
           <input type="date" name="vencimiento_lote">
+        </div>
+        <div class="form-group">
+          <label>Ubicación</label>
+          ${selectUbicacion()}
+        </div>
+        <div class="form-group">
+          <label>N° de compra</label>
+          <input type="text" name="numero_compra" placeholder="Opcional">
         </div>
         ` : ''}
         <div class="form-group">
@@ -268,12 +283,15 @@ function abrirFormProducto(id) {
         prodId = r.id;
         if (cantInicial > 0) {
           await movApi.crear({
-            producto_id: prodId,
-            tipo: 'entrada',
-            cantidad: cantInicial,
-            codigo_lote: data.codigo_lote || null,
+            producto_id:      prodId,
+            tipo:             'entrada',
+            cantidad:         cantInicial,
+            codigo_lote:      data.codigo_lote      || null,
             vencimiento_lote: data.vencimiento_lote || null,
-            motivo: 'Stock inicial',
+            ubicacion_id:     data.ubicacion_id     || null,
+            ubicacion_nombre: _ubicaciones.find(u => u.id === data.ubicacion_id)?.nombre || null,
+            numero_compra:    data.numero_compra    || null,
+            motivo:           'Stock inicial',
           });
         }
       }
@@ -332,6 +350,14 @@ function abrirModalMovimiento(productoId, loteId) {
             <label>Vencimiento</label>
             <input type="date" name="vencimiento_lote" value="${lote?.vencimiento||''}">
           </div>
+          <div class="form-group">
+            <label>Ubicación</label>
+          ${selectUbicacion(lote?.ubicacion_id||'')}
+          </div>
+          <div class="form-group">
+            <label>N° de compra</label>
+            <input type="text" name="numero_compra" value="${esc(lote?.numero_compra||'')}" placeholder="Opcional">
+          </div>
         </div>
       </div>
       <div id="ayuda-salida" class="alert alert-info hidden" style="margin-bottom:.5rem;font-size:.82rem">
@@ -376,8 +402,11 @@ function abrirModalMovimiento(productoId, loteId) {
       motivo:      raw.motivo || null,
     };
     if (raw.tipo === 'entrada') {
-      payload.codigo_lote      = raw.codigo_lote || null;
+      payload.codigo_lote      = raw.codigo_lote      || null;
       payload.vencimiento_lote = raw.vencimiento_lote || null;
+      payload.ubicacion_id     = raw.ubicacion_id     || null;
+      payload.ubicacion_nombre = _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null;
+      payload.numero_compra    = raw.numero_compra    || null;
     }
     if ((raw.tipo === 'salida' || raw.tipo === 'ajuste') && loteId) {
       payload.lote_id = loteId;
@@ -419,6 +448,14 @@ function abrirModalAgregarLote(productoId) {
           <label>Cantidad *</label>
           <input type="number" name="cantidad" min="1" required>
         </div>
+        <div class="form-group">
+          <label>Ubicación</label>
+          ${selectUbicacion()}
+        </div>
+        <div class="form-group">
+          <label>N° de compra</label>
+          <input type="text" name="numero_compra" placeholder="Opcional">
+        </div>
       </div>
       <div id="form-lote-error" class="alert alert-error hidden" style="margin-top:.5rem"></div>
       <div class="modal-footer">
@@ -436,10 +473,13 @@ function abrirModalAgregarLote(productoId) {
     errEl.classList.add('hidden');
     try {
       await lotesApi.crear({
-        producto_id:  productoId,
-        codigo_lote:  raw.codigo_lote || null,
-        vencimiento:  raw.vencimiento || null,
-        cantidad:     Number(raw.cantidad),
+        producto_id:   productoId,
+        codigo_lote:   raw.codigo_lote   || null,
+        vencimiento:   raw.vencimiento   || null,
+        cantidad:      Number(raw.cantidad),
+        ubicacion_id:     raw.ubicacion_id     || null,
+        ubicacion_nombre: _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null,
+        numero_compra:    raw.numero_compra    || null,
       });
       toast('Lote agregado');
       cerrarModal();
@@ -472,6 +512,14 @@ function abrirModalEditarLote(loteId, productoId) {
           <label>Vencimiento</label>
           <input type="date" name="vencimiento" value="${lote.vencimiento||''}">
         </div>
+        <div class="form-group">
+          <label>Ubicación</label>
+          ${selectUbicacion(lote.ubicacion_id||'')}
+        </div>
+        <div class="form-group">
+          <label>N° de compra</label>
+          <input type="text" name="numero_compra" value="${esc(lote.numero_compra||'')}">
+        </div>
       </div>
       <p style="color:var(--color-text-muted);font-size:.82rem;margin:.25rem 0 .75rem">
         Cantidad actual: <strong>${fmtNum(lote.cantidad)}</strong> — usa "± Stock" para modificar cantidad.
@@ -499,7 +547,13 @@ function abrirModalEditarLote(loteId, productoId) {
     const errEl = document.getElementById('form-editlote-error');
     errEl.classList.add('hidden');
     try {
-      await lotesApi.editar(loteId, { codigo_lote: raw.codigo_lote || null, vencimiento: raw.vencimiento || null });
+      await lotesApi.editar(loteId, {
+        codigo_lote:   raw.codigo_lote   || null,
+        vencimiento:   raw.vencimiento   || null,
+        ubicacion_id:     raw.ubicacion_id     || null,
+        ubicacion_nombre: _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null,
+        numero_compra: raw.numero_compra || null,
+      });
       toast('Lote actualizado');
       cerrarModal();
       cargar();
@@ -530,6 +584,107 @@ window._delProducto  = async (id) => {
 
 function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selectUbicacion(selectedId = '') {
+  const ops = _ubicaciones.map(u =>
+    `<option value="${u.id}" data-nombre="${esc(u.nombre)}" ${u.id === selectedId ? 'selected' : ''}>${esc(u.nombre)}</option>`
+  ).join('');
+  return `<select name="ubicacion_id"><option value="">Sin ubicación</option>${ops}</select>`;
+}
+
+// ===== Importar Excel =====
+function abrirModalImportarExcel() {
+  const opsCat = _categorias.map(c =>
+    `<option value="${c.id}">${esc(c.nombre)}</option>`
+  ).join('');
+
+  abrirModal(`
+    <div class="modal-header">
+      <h3>📂 Importar productos desde Excel</h3>
+      <button class="modal-close" aria-label="Cerrar">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--color-text-muted);margin-bottom:.75rem">
+      El archivo debe tener los nombres de los productos en la <strong>columna A</strong> (la primera fila se omite como encabezado).
+      Se crearán con stock 0 y podrás editar cada uno después.
+    </p>
+    <div class="form-row">
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Archivo Excel (.xlsx, .xls, .csv) *</label>
+        <input type="file" id="imp-file" accept=".xlsx,.xls,.csv" required>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Categoría para todos los productos *</label>
+        <select id="imp-categoria" required>
+          <option value="">Seleccione una categoría...</option>${opsCat}
+        </select>
+      </div>
+    </div>
+    <div id="imp-preview" style="display:none;margin-bottom:.75rem">
+      <p style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">Vista previa (<span id="imp-count">0</span> productos):</p>
+      <div id="imp-lista" style="max-height:200px;overflow-y:auto;font-size:.82rem;border:1px solid var(--color-border);border-radius:var(--radius-sm);padding:.5rem;background:var(--color-surface)"></div>
+    </div>
+    <div id="imp-error" class="alert alert-error hidden"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+      <button id="imp-btn-confirmar" class="btn btn-primary" disabled>Importar</button>
+    </div>
+  `, { size: 'lg' });
+
+  let nombres = [];
+
+  document.getElementById('imp-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb   = XLSX.read(ev.target.result, { type: 'array' });
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        // Tomar columna A, saltar primera fila (encabezado), filtrar vacíos
+        nombres = rows.slice(1)
+          .map(r => String(r[0] || '').trim())
+          .filter(n => n.length > 0);
+
+        document.getElementById('imp-count').textContent = nombres.length;
+        document.getElementById('imp-lista').innerHTML = nombres
+          .map(n => `<div style="padding:.15rem 0;border-bottom:1px solid var(--color-border)">${esc(n)}</div>`)
+          .join('');
+        document.getElementById('imp-preview').style.display = '';
+        document.getElementById('imp-btn-confirmar').disabled = nombres.length === 0;
+      } catch {
+        document.getElementById('imp-error').textContent = 'No se pudo leer el archivo.';
+        document.getElementById('imp-error').classList.remove('hidden');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  document.getElementById('imp-btn-confirmar').addEventListener('click', async () => {
+    const catId  = document.getElementById('imp-categoria').value;
+    const errEl  = document.getElementById('imp-error');
+    errEl.classList.add('hidden');
+
+    if (!catId)         { errEl.textContent = 'Selecciona una categoría.'; errEl.classList.remove('hidden'); return; }
+    if (!nombres.length){ errEl.textContent = 'No hay productos para importar.'; errEl.classList.remove('hidden'); return; }
+
+    const btn = document.getElementById('imp-btn-confirmar');
+    btn.disabled = true; btn.textContent = `Importando 0/${nombres.length}...`;
+
+    let ok = 0, errores = 0;
+    for (const nombre of nombres) {
+      try {
+        await prodApi.crear({ nombre, categoria_id: catId, cantidad: 0, umbral_critico: 0, umbral_bajo: 0 });
+        ok++;
+      } catch { errores++; }
+      btn.textContent = `Importando ${ok + errores}/${nombres.length}...`;
+    }
+
+    toast(`Importación completa: ${ok} creados${errores ? `, ${errores} errores` : ''}`);
+    cerrarModal();
+    cargar();
+  });
 }
 
 // ===== Lightbox =====
