@@ -23,7 +23,6 @@ export function exportarInventarioExcel(productos) {
     'Estado':          estadoTexto(p),
     'Umbral Crítico':  p.umbral_critico,
     'Umbral Bajo':     p.umbral_bajo,
-    'Unid. por Caja':  p.unidades_por_caja,
     'Vencimiento':     p.vencimiento || '',
   }));
 
@@ -42,8 +41,6 @@ export function exportarMovimientosExcel(movimientos) {
     'Categoría':        m.categoria_nombre,
     'Tipo':             m.tipo.charAt(0).toUpperCase() + m.tipo.slice(1),
     'Cantidad':         m.cantidad,
-    'Cajas':            m.cajas ?? '',
-    'Unid. por Caja':   m.unidades_por_caja ?? '',
     'Stock Resultante': m.stock_resultante,
     'Usuario':          m.usuario_nombre,
     'Motivo':           m.motivo || '',

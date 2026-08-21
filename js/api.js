@@ -239,7 +239,6 @@ export const productos = {
       categoria_id:      String(data.categoria_id),
       categoria_nombre:  catSnap.data()?.nombre || '',
       cantidad:          0,
-      unidades_por_caja: Number(data.unidades_por_caja) || 1,
       umbral_critico:    Number(data.umbral_critico)    || 0,
       umbral_bajo:       Number(data.umbral_bajo)       || 0,
       vencimiento: null, lote: null, foto: null,
@@ -255,7 +254,6 @@ export const productos = {
       nombre:            data.nombre,
       categoria_id:      String(data.categoria_id),
       categoria_nombre:  catSnap.data()?.nombre || '',
-      unidades_por_caja: Number(data.unidades_por_caja) || 1,
       umbral_critico:    Number(data.umbral_critico)    || 0,
       umbral_bajo:       Number(data.umbral_bajo)       || 0,
     });
@@ -574,10 +572,12 @@ export const reportes = {
     const ini = new Date(`${anio}-${mm}-01T00:00:00`);
     const fin = new Date(anio, mes, 0, 23, 59, 59);
 
+    // Una sola consulta: todos los movimientos hasta el fin del período,
+    // ordenados por fecha ascendente. Evita índices compuestos (producto_id + fecha)
+    // que antes hacían fallar el reporte.
     const [prodSnap, movSnap] = await Promise.all([
       getDocs(query(collection(db, 'productos'), orderBy('nombre'))),
       getDocs(query(collection(db, 'movimientos'),
-        where('fecha', '>=', Timestamp.fromDate(ini)),
         where('fecha', '<=', Timestamp.fromDate(fin)),
         orderBy('fecha', 'asc'))),
     ]);
@@ -585,25 +585,27 @@ export const reportes = {
     let prods = prodSnap.docs.map(toObj).filter(p => p.activo !== false);
     if (categoria_id) prods = prods.filter(p => p.categoria_id === String(categoria_id));
 
-    const allMovs = movSnap.docs.map(toObj);
     const today   = now.toISOString().slice(0, 10);
     const en30    = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
 
-    // Último movimiento antes del período, por producto (en paralelo)
-    const antesSnaps = await Promise.all(prods.map(p =>
-      getDocs(query(collection(db, 'movimientos'),
-        where('producto_id', '==', p.id),
-        where('fecha', '<', Timestamp.fromDate(ini)),
-        orderBy('fecha', 'desc'), fbLimit(1)))
-    ));
+    // Agrupar movimientos por producto (ya vienen ordenados por fecha asc)
+    const iniMs = ini.getTime();
+    const movsByProd = {};
+    for (const d of movSnap.docs) {
+      const m = toObj(d);
+      (movsByProd[m.producto_id] ||= []).push(m);
+    }
 
-    const filas = prods.map((p, i) => {
-      const movs    = allMovs.filter(m => m.producto_id === p.id);
-      const antes   = antesSnaps[i];
-      const stockInicial = !antes.empty
-        ? antes.docs[0].data().stock_resultante
-        : (movs.length ? 0 : p.cantidad);
-      const stockFinal   = movs.length ? movs[movs.length - 1].stock_resultante : p.cantidad;
+    const filas = prods.map((p) => {
+      const todos    = movsByProd[p.id] || [];
+      const antes    = todos.filter(m => new Date(m.fecha).getTime() <  iniMs);
+      const movs     = todos.filter(m => new Date(m.fecha).getTime() >= iniMs);
+      const stockInicial = antes.length
+        ? antes[antes.length - 1].stock_resultante
+        : (todos.length ? 0 : p.cantidad);
+      const stockFinal   = movs.length
+        ? movs[movs.length - 1].stock_resultante
+        : (antes.length ? stockInicial : p.cantidad);
       const entradas = movs.filter(m => m.tipo === 'entrada').reduce((s, m) => s + m.cantidad, 0);
       const salidas  = movs.filter(m => m.tipo === 'salida').reduce((s, m) => s + m.cantidad, 0);
       const ajustes  = movs.filter(m => m.tipo === 'ajuste').length;
