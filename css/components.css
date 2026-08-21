@@ -445,3 +445,60 @@ select option { background: #fff; color: var(--color-text); }
   .filtros-bar { flex-direction: column; align-items: stretch; }
   .filtros-bar .select-filtro, .filtros-bar .input-buscar { width: 100%; }
 }
+
+/* ============================
+   Cotizaciones
+   ============================ */
+.cotizacion-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.cotizacion-carro {
+  background: rgba(255,255,255,.7);
+  border: 1px solid rgba(148,163,184,.3);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem 1.25rem;
+  backdrop-filter: var(--blur);
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 1rem;
+}
+.cotizacion-carro-titulo {
+  font-size: 1.05rem; font-weight: 700; color: var(--color-primary);
+  margin-bottom: .75rem;
+}
+
+.cotizacion-items { display: flex; flex-direction: column; gap: .5rem; margin: .5rem 0 1rem; }
+
+.cot-item {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid rgba(148,163,184,.2);
+}
+.cot-item-info   { display: flex; flex-direction: column; line-height: 1.25; }
+.cot-item-qty    { display: flex; align-items: center; gap: .35rem; }
+.cot-item-qty .btn-sq { width: 26px; height: 26px; font-size: .95rem; }
+.cot-item-cant   { min-width: 20px; text-align: center; font-weight: 600; }
+.cot-item-sub    { font-weight: 700; min-width: 64px; text-align: right; font-size: .85rem; }
+.cot-item .btn-sq.btn-trash { width: 28px; height: 28px; }
+
+.cotizacion-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: .75rem 0; margin-top: .25rem;
+  border-top: 2px solid rgba(148,163,184,.3);
+  font-size: 1rem;
+}
+.cotizacion-total strong { font-size: 1.4rem; color: var(--color-primary); }
+
+.cotizacion-acciones { display: flex; flex-direction: column; gap: .5rem; margin-top: 1rem; }
+
+@media (max-width: 820px) {
+  .cotizacion-layout { grid-template-columns: 1fr; }
+  .cotizacion-carro  { position: static; }
+}
