@@ -128,14 +128,14 @@ function renderTabla() {
       }
       if (numCompra) nombreCell += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
 
+      const loteArg = loteId ? `'${loteId}'` : 'null';
       const accionesBotones = `
-        <button class="btn btn-secondary btn-sm" onclick="window._movLote('${p.id}',${loteId ? `'${loteId}'` : 'null'})">± Stock</button>
-        ${loteId ? `<button class="btn btn-secondary btn-sm" onclick="window._editLote('${loteId}','${p.id}')">✎</button>` : ''}
-        ${esFirst ? `
-          <button class="btn btn-secondary btn-sm" onclick="window._addLote('${p.id}')" title="Agregar nuevo lote">+Lote</button>
-          <button class="btn btn-secondary btn-sm" onclick="window._editProducto('${p.id}')">Editar</button>
-          <button class="btn btn-danger btn-sm"    onclick="window._delProducto('${p.id}')">✕</button>
-        ` : ''}
+        <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',${loteArg})">+</button>
+        <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
+        <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})">✎ Editar</button>
+        ${esFirst
+          ? `<button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>`
+          : `<button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')">🗑</button>`}
       `;
 
       rows.push(`
@@ -202,10 +202,6 @@ function abrirFormProducto(id) {
         </div>
         ` : ''}
         <div class="form-group">
-          <label>Unid. por caja</label>
-          <input type="number" name="unidades_por_caja" value="${prod?.unidades_por_caja||1}" min="1">
-        </div>
-        <div class="form-group">
           <label>Umbral crítico</label>
           <input type="number" name="umbral_critico" value="${prod?.umbral_critico||0}" min="0">
         </div>
@@ -236,35 +232,7 @@ function abrirFormProducto(id) {
     </form>
   `, { size: 'lg' });
 
-  let fotoFile = null;
-  const dropArea    = document.getElementById('foto-drop-area');
-  const fotoInput   = document.getElementById('foto-input');
-  const previewImg  = document.getElementById('foto-preview-img');
-  const placeholder = document.getElementById('foto-placeholder');
-
-  function mostrarPreview(file) {
-    fotoFile = file;
-    const url = URL.createObjectURL(file);
-    if (previewImg.tagName === 'IMG') {
-      previewImg.src = url; previewImg.style.display = '';
-    } else {
-      const img = document.createElement('img');
-      img.src = url; img.className = 'foto-preview'; img.id = 'foto-preview-img';
-      dropArea.insertBefore(img, placeholder);
-    }
-    if (placeholder) placeholder.style.display = 'none';
-    dropArea.classList.add('has-preview');
-  }
-
-  dropArea.addEventListener('click', () => fotoInput.click());
-  fotoInput.addEventListener('change', e => { if (e.target.files[0]) mostrarPreview(e.target.files[0]); });
-  dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = 'var(--color-primary)'; });
-  dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = ''; });
-  dropArea.addEventListener('drop', e => {
-    e.preventDefault(); dropArea.style.borderColor = '';
-    const file = e.dataTransfer.files[0];
-    if (file?.type.startsWith('image/')) mostrarPreview(file);
-  });
+  const getFotoFile = configurarFotoUpload();
 
   document.getElementById('form-producto').addEventListener('submit', async e => {
     e.preventDefault();
@@ -295,6 +263,7 @@ function abrirFormProducto(id) {
           });
         }
       }
+      const fotoFile = getFotoFile();
       if (fotoFile && prodId) await prodApi.subirFoto(prodId, fotoFile);
       toast(prod ? 'Producto actualizado' : 'Producto creado');
       cerrarModal();
@@ -307,7 +276,7 @@ function abrirFormProducto(id) {
 }
 
 // ===== Modal movimiento (por lote) =====
-function abrirModalMovimiento(productoId, loteId) {
+function abrirModalMovimiento(productoId, loteId, tipoPreset) {
   const prod = _productos.find(p => p.id === productoId);
   if (!prod) return;
 
@@ -379,6 +348,7 @@ function abrirModalMovimiento(productoId, loteId) {
   `);
 
   const tipoSel = document.querySelector('#form-movimiento [name=tipo]');
+  if (tipoPreset) tipoSel.value = tipoPreset;
   tipoSel.dispatchEvent(new Event('change'));
   tipoSel.addEventListener('change', () => {
     const t = tipoSel.value;
@@ -424,85 +394,43 @@ function abrirModalMovimiento(productoId, loteId) {
   });
 }
 
-// ===== Modal agregar nuevo lote =====
-function abrirModalAgregarLote(productoId) {
+// ===== Modal editar item (producto + lote) =====
+function abrirModalEditarItem(productoId, loteId) {
   const prod = _productos.find(p => p.id === productoId);
   if (!prod) return;
+  const lote = loteId ? prod.lotes?.find(l => l.id === loteId) : null;
+  const opsCat = _categorias.map(c =>
+    `<option value="${c.id}" ${prod.categoria_id == c.id ? 'selected' : ''}>${esc(c.nombre)}</option>`
+  ).join('');
 
   abrirModal(`
     <div class="modal-header">
-      <h3>Agregar Lote — ${esc(prod.nombre)}</h3>
+      <h3>Editar — ${esc(prod.nombre)}</h3>
       <button class="modal-close" aria-label="Cerrar">✕</button>
     </div>
-    <form id="form-agregar-lote" novalidate>
+    <form id="form-editar-item" novalidate>
+      <h4 class="edit-section-title">Producto</h4>
       <div class="form-row">
-        <div class="form-group">
-          <label>Código de lote</label>
-          <input type="text" name="codigo_lote" placeholder="Ej: L2025-002 (opcional)">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Nombre *</label>
+          <input type="text" name="nombre" value="${esc(prod.nombre)}" required>
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Categoría *</label>
+          <select name="categoria_id" required><option value="">Seleccione...</option>${opsCat}</select>
         </div>
         <div class="form-group">
-          <label>Vencimiento</label>
-          <input type="date" name="vencimiento">
+          <label>Umbral crítico</label>
+          <input type="number" name="umbral_critico" value="${prod.umbral_critico||0}" min="0">
         </div>
         <div class="form-group">
-          <label>Cantidad *</label>
-          <input type="number" name="cantidad" min="1" required>
-        </div>
-        <div class="form-group">
-          <label>Ubicación</label>
-          ${selectUbicacion()}
-        </div>
-        <div class="form-group">
-          <label>N° de compra</label>
-          <input type="text" name="numero_compra" placeholder="Opcional">
+          <label>Umbral bajo</label>
+          <input type="number" name="umbral_bajo" value="${prod.umbral_bajo||0}" min="0">
         </div>
       </div>
-      <div id="form-lote-error" class="alert alert-error hidden" style="margin-top:.5rem"></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Agregar lote</button>
-      </div>
-    </form>
-  `);
 
-  document.getElementById('form-agregar-lote').addEventListener('submit', async e => {
-    e.preventDefault();
-    const fd  = new FormData(e.target);
-    const raw = Object.fromEntries(fd);
-    const errEl = document.getElementById('form-lote-error');
-    errEl.classList.add('hidden');
-    try {
-      await lotesApi.crear({
-        producto_id:   productoId,
-        codigo_lote:   raw.codigo_lote   || null,
-        vencimiento:   raw.vencimiento   || null,
-        cantidad:      Number(raw.cantidad),
-        ubicacion_id:     raw.ubicacion_id     || null,
-        ubicacion_nombre: _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null,
-        numero_compra:    raw.numero_compra    || null,
-      });
-      toast('Lote agregado');
-      cerrarModal();
-      cargar();
-    } catch (err) {
-      errEl.textContent = err.message;
-      errEl.classList.remove('hidden');
-    }
-  });
-}
-
-// ===== Modal editar lote =====
-function abrirModalEditarLote(loteId, productoId) {
-  const prod = _productos.find(p => p.id === productoId);
-  const lote = prod?.lotes?.find(l => l.id === loteId);
-  if (!lote) return;
-
-  abrirModal(`
-    <div class="modal-header">
-      <h3>Editar Lote — ${esc(prod.nombre)}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
-    </div>
-    <form id="form-editar-lote" novalidate>
+      ${lote ? `
+      <h4 class="edit-section-title">Lote${lote.codigo_lote ? ` — ${esc(lote.codigo_lote)}` : ''}</h4>
       <div class="form-row">
         <div class="form-group">
           <label>Código de lote</label>
@@ -521,40 +449,58 @@ function abrirModalEditarLote(loteId, productoId) {
           <input type="text" name="numero_compra" value="${esc(lote.numero_compra||'')}">
         </div>
       </div>
-      <p style="color:var(--color-text-muted);font-size:.82rem;margin:.25rem 0 .75rem">
-        Cantidad actual: <strong>${fmtNum(lote.cantidad)}</strong> — usa "± Stock" para modificar cantidad.
+      <p style="color:var(--color-text-muted);font-size:.82rem;margin:.1rem 0 .5rem">
+        Cantidad actual: <strong>${fmtNum(lote.cantidad)}</strong> — usa <strong>+</strong> / <strong>−</strong> para modificar la cantidad.
       </p>
-      <div id="form-editlote-error" class="alert alert-error hidden"></div>
+      ` : ''}
+
+      <h4 class="edit-section-title">Foto</h4>
+      <div class="form-group" style="margin-top:.25rem">
+        <div class="foto-upload-area${prod.foto ? ' has-preview' : ''}" id="foto-drop-area">
+          ${prod.foto
+            ? `<img src="${prod.foto}?t=${Date.now()}" class="foto-preview" id="foto-preview-img" alt="foto">`
+            : `<div id="foto-preview-img" style="display:none"></div>`}
+          <div id="foto-placeholder" style="${prod.foto ? 'display:none' : ''}; font-size:.85rem; color:var(--color-text-muted)">
+            📷 Haz clic o arrastra una imagen aquí
+          </div>
+          <input type="file" id="foto-input" accept="image/*" style="display:none">
+        </div>
+      </div>
+
+      <div id="form-item-error" class="alert alert-error hidden" style="margin-top:.5rem"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
-        ${lote.cantidad === 0 ? `<button type="button" class="btn btn-danger" id="btn-del-lote">Eliminar lote</button>` : ''}
-        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
       </div>
     </form>
-  `);
+  `, { size: 'lg' });
 
-  document.getElementById('btn-del-lote')?.addEventListener('click', async () => {
-    const ok = await confirmar('¿Eliminar este lote? (cantidad = 0)');
-    if (!ok) return;
-    try { await lotesApi.eliminar(loteId); toast('Lote eliminado'); cerrarModal(); cargar(); }
-    catch (err) { toast('Error: ' + err.message, 'error'); }
-  });
+  const getFotoFile = configurarFotoUpload();
 
-  document.getElementById('form-editar-lote').addEventListener('submit', async e => {
+  document.getElementById('form-editar-item').addEventListener('submit', async e => {
     e.preventDefault();
-    const fd  = new FormData(e.target);
-    const raw = Object.fromEntries(fd);
-    const errEl = document.getElementById('form-editlote-error');
+    const raw   = Object.fromEntries(new FormData(e.target));
+    const errEl = document.getElementById('form-item-error');
     errEl.classList.add('hidden');
     try {
-      await lotesApi.editar(loteId, {
-        codigo_lote:   raw.codigo_lote   || null,
-        vencimiento:   raw.vencimiento   || null,
-        ubicacion_id:     raw.ubicacion_id     || null,
-        ubicacion_nombre: _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null,
-        numero_compra: raw.numero_compra || null,
+      await prodApi.editar(productoId, {
+        nombre:         raw.nombre,
+        categoria_id:   raw.categoria_id,
+        umbral_critico: raw.umbral_critico,
+        umbral_bajo:    raw.umbral_bajo,
       });
-      toast('Lote actualizado');
+      if (lote) {
+        await lotesApi.editar(loteId, {
+          codigo_lote:      raw.codigo_lote   || null,
+          vencimiento:      raw.vencimiento   || null,
+          ubicacion_id:     raw.ubicacion_id  || null,
+          ubicacion_nombre: _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null,
+          numero_compra:    raw.numero_compra || null,
+        });
+      }
+      const fotoFile = getFotoFile();
+      if (fotoFile) await prodApi.subirFoto(productoId, fotoFile);
+      toast('Cambios guardados');
       cerrarModal();
       cargar();
     } catch (err) {
@@ -564,21 +510,68 @@ function abrirModalEditarLote(loteId, productoId) {
   });
 }
 
+// ===== Helper: subida de foto (arrastrar/soltar + preview) =====
+// Espera en el DOM: #foto-drop-area, #foto-input, #foto-preview-img, #foto-placeholder.
+// Devuelve un getter que retorna el archivo seleccionado (o null).
+function configurarFotoUpload() {
+  let fotoFile = null;
+  const dropArea    = document.getElementById('foto-drop-area');
+  const fotoInput   = document.getElementById('foto-input');
+  const previewImg  = document.getElementById('foto-preview-img');
+  const placeholder = document.getElementById('foto-placeholder');
+  if (!dropArea) return () => null;
+
+  function mostrarPreview(file) {
+    fotoFile = file;
+    const url = URL.createObjectURL(file);
+    if (previewImg.tagName === 'IMG') {
+      previewImg.src = url; previewImg.style.display = '';
+    } else {
+      const img = document.createElement('img');
+      img.src = url; img.className = 'foto-preview'; img.id = 'foto-preview-img';
+      dropArea.insertBefore(img, placeholder);
+    }
+    if (placeholder) placeholder.style.display = 'none';
+    dropArea.classList.add('has-preview');
+  }
+
+  dropArea.addEventListener('click', () => fotoInput.click());
+  fotoInput.addEventListener('change', e => { if (e.target.files[0]) mostrarPreview(e.target.files[0]); });
+  dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = 'var(--color-primary)'; });
+  dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = ''; });
+  dropArea.addEventListener('drop', e => {
+    e.preventDefault(); dropArea.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file?.type.startsWith('image/')) mostrarPreview(file);
+  });
+
+  return () => fotoFile;
+}
+
 async function exportarInventario() {
   const { exportarInventarioExcel } = await import('./excel.js');
   exportarInventarioExcel(_productos);
 }
 
 // ===== Globales para onclick en tabla =====
-window._movLote      = (prodId, loteId)   => abrirModalMovimiento(prodId, loteId);
-window._addLote      = (prodId)            => abrirModalAgregarLote(prodId);
-window._editLote     = (loteId, prodId)    => abrirModalEditarLote(loteId, prodId);
-window._editProducto = (id)                => abrirFormProducto(id);
+window._addStock = (prodId, loteId) => abrirModalMovimiento(prodId, loteId, 'entrada');
+window._subStock = (prodId, loteId) => abrirModalMovimiento(prodId, loteId, 'salida');
+window._editItem = (prodId, loteId) => abrirModalEditarItem(prodId, loteId);
 window._delProducto  = async (id) => {
   const p  = _productos.find(p => p.id === id);
   const ok = await confirmar(`¿Eliminar <strong>${esc(p?.nombre||id)}</strong>?`);
   if (!ok) return;
   try { await prodApi.eliminar(id); toast('Producto eliminado'); cargar(); }
+  catch (e) { toast('Error: ' + e.message, 'error'); }
+};
+window._delLote = async (loteId, prodId) => {
+  const prod = _productos.find(p => p.id === prodId);
+  const lote = prod?.lotes?.find(l => l.id === loteId);
+  const label = lote?.codigo_lote ? `el lote <strong>${esc(lote.codigo_lote)}</strong>` : 'este lote';
+  const aviso = lote?.cantidad > 0 ? `<br><span class="text-muted">Aún tiene ${fmtNum(lote.cantidad)} unidades.</span>` : '';
+  const ok = await confirmar(`¿Eliminar ${label}?${aviso}`);
+  if (!ok) return;
+  try { await lotesApi.eliminar(loteId, true); toast('Lote eliminado'); cargar(); }
   catch (e) { toast('Error: ' + e.message, 'error'); }
 };
 

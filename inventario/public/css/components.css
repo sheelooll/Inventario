@@ -62,6 +62,44 @@
 .btn-large { padding: .7rem 1.75rem; font-size: 1rem; }
 .btn-full  { width: 100%; }
 
+.btn-success {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(22,163,74,.3);
+}
+.btn-success:hover:not(:disabled) {
+  background: linear-gradient(135deg, #15803d, #166534);
+  box-shadow: 0 4px 14px rgba(22,163,74,.4);
+  transform: translateY(-1px);
+}
+
+/* Botones cuadrados de la barra de acciones (inventario) */
+.btn-sq {
+  width: 36px; height: 36px; padding: 0;
+  font-size: 1.1rem; font-weight: 700; line-height: 1;
+  flex: 0 0 auto;
+}
+.btn-sq.btn-edit {
+  width: auto; padding: 0 .7rem; font-size: .82rem; font-weight: 600;
+}
+.btn-sq.btn-trash {
+  font-size: 1rem;
+  background: rgba(220,38,38,.08);
+  color: #b91c1c;
+  border-color: rgba(220,38,38,.35);
+}
+.btn-sq.btn-trash:hover:not(:disabled) {
+  background: rgba(220,38,38,.16);
+  border-color: rgba(220,38,38,.55);
+}
+
+.edit-section-title {
+  font-size: .8rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--color-text-muted);
+  margin: .5rem 0 .5rem; padding-bottom: .3rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
 /* ============================
    Formularios
    ============================ */
@@ -176,7 +214,7 @@ select option { background: #fff; color: var(--color-text); }
 .tabla tbody tr:last-child td { border-bottom: none; }
 .tabla tbody tr:hover { background: rgba(37,99,235,.04); }
 .tabla-sm td, .tabla-sm th { padding: .45rem .75rem; }
-.tabla .acciones { display: flex; gap: .4rem; justify-content: center; }
+.tabla .acciones { display: flex; gap: .4rem; justify-content: center; flex-wrap: wrap; }
 
 .empty-row td { text-align: center; color: var(--color-text-light); padding: 2.5rem; font-style: italic; }
 
