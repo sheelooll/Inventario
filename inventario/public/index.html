@@ -7,6 +7,8 @@
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -52,6 +54,7 @@
         <li><a href="#inventario"  class="nav-link" data-view="inventario">📦 Inventario</a></li>
         <li><a href="#movimientos" class="nav-link" data-view="movimientos">🔄 Movimientos</a></li>
         <li><a href="#categorias"  class="nav-link" data-view="categorias">🏷️ Categorías</a></li>
+        <li><a href="#cotizaciones" class="nav-link" data-view="cotizaciones">🧾 Cotizaciones</a></li>
         <li><a href="#reportes"    class="nav-link" data-view="reportes">📊 Reportes</a></li>
         <li><a href="#usuarios"    class="nav-link" data-view="usuarios">👥 Usuarios</a></li>
       </ul>
@@ -178,6 +181,53 @@
             </thead>
             <tbody id="tbody-movimientos"></tbody>
           </table>
+        </div>
+      </section>
+
+      <!-- ===== COTIZACIONES ===== -->
+      <section id="view-cotizaciones" class="view hidden">
+        <div class="view-header">
+          <h2>Cotizaciones</h2>
+          <button id="btn-nuevo-examen" class="btn btn-primary">+ Nuevo examen</button>
+        </div>
+
+        <div class="cotizacion-layout">
+          <!-- Catálogo de exámenes -->
+          <div class="cotizacion-catalogo">
+            <div class="filtros-bar" style="margin-bottom:1rem">
+              <input type="text" id="cot-buscar" class="input-buscar" placeholder="🔍 Buscar examen...">
+            </div>
+            <div class="tabla-container">
+              <table class="tabla tabla-sm">
+                <thead>
+                  <tr>
+                    <th>Examen</th>
+                    <th class="text-right">Precio</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-examenes"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Cotización actual -->
+          <aside class="cotizacion-carro">
+            <h3 class="cotizacion-carro-titulo">🧾 Cotización</h3>
+            <div class="form-group">
+              <label>Cliente / Paciente</label>
+              <input type="text" id="cot-cliente" placeholder="Nombre (opcional)">
+            </div>
+            <div id="cot-items" class="cotizacion-items"></div>
+            <div class="cotizacion-total">
+              <span>Total</span>
+              <strong id="cot-total">$0</strong>
+            </div>
+            <div class="cotizacion-acciones">
+              <button id="btn-descargar-pdf" class="btn btn-primary btn-full">⬇ Descargar PDF</button>
+              <button id="btn-limpiar-cot" class="btn btn-secondary btn-full">Limpiar cotización</button>
+            </div>
+          </aside>
         </div>
       </section>
 

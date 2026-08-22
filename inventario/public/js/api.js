@@ -118,6 +118,56 @@ export const ubicaciones = {
   },
 };
 
+// ===== Exámenes (catálogo para cotizaciones) =====
+const EXAMENES_EJEMPLO = [
+  { nombre: 'Hemograma completo',              precio: 6500,  descripcion: 'Recuento de células sanguíneas' },
+  { nombre: 'Perfil lipídico',                 precio: 8900,  descripcion: 'Colesterol total, HDL, LDL, triglicéridos' },
+  { nombre: 'Glicemia en ayunas',             precio: 3500,  descripcion: 'Nivel de glucosa en sangre' },
+  { nombre: 'Perfil bioquímico',               precio: 12000, descripcion: 'Panel metabólico completo' },
+  { nombre: 'Perfil hepático',                 precio: 9500,  descripcion: 'Función del hígado' },
+  { nombre: 'Orina completa',                  precio: 4000,  descripcion: 'Análisis físico-químico de orina' },
+  { nombre: 'Urocultivo',                      precio: 7000,  descripcion: 'Detección de infección urinaria' },
+  { nombre: 'TSH (hormona tiroidea)',          precio: 8500,  descripcion: 'Función de la tiroides' },
+  { nombre: 'Hemoglobina glicosilada (HbA1c)', precio: 9000,  descripcion: 'Control de diabetes' },
+  { nombre: 'Creatinina',                      precio: 3800,  descripcion: 'Función renal' },
+  { nombre: 'Proteína C reactiva (PCR)',       precio: 5500,  descripcion: 'Marcador de inflamación' },
+  { nombre: 'VHS',                             precio: 3000,  descripcion: 'Velocidad de eritrosedimentación' },
+];
+
+export const examenes = {
+  listar: async () => {
+    const snap = await getDocs(query(collection(db, 'examenes'), orderBy('nombre')));
+    return snap.docs.map(toObj);
+  },
+  crear: async ({ nombre, precio, descripcion }) => {
+    const r = await addDoc(collection(db, 'examenes'), {
+      nombre, precio: Number(precio) || 0, descripcion: descripcion || '', creado_en: serverTimestamp(),
+    });
+    return { id: r.id };
+  },
+  editar: async (id, { nombre, precio, descripcion }) => {
+    await updateDoc(doc(db, 'examenes', String(id)), {
+      nombre, precio: Number(precio) || 0, descripcion: descripcion || '',
+    });
+    return { ok: true };
+  },
+  eliminar: async (id) => {
+    await deleteDoc(doc(db, 'examenes', String(id)));
+    return { ok: true };
+  },
+  // Crea exámenes de ejemplo solo si la colección está vacía
+  sembrarEjemplos: async () => {
+    const snap = await getDocs(query(collection(db, 'examenes'), fbLimit(1)));
+    if (!snap.empty) return { creados: 0 };
+    const batch = writeBatch(db);
+    for (const e of EXAMENES_EJEMPLO) {
+      batch.set(doc(collection(db, 'examenes')), { ...e, creado_en: serverTimestamp() });
+    }
+    await batch.commit();
+    return { creados: EXAMENES_EJEMPLO.length };
+  },
+};
+
 // ===== Categorias =====
 export const categorias = {
   listar: async () => {

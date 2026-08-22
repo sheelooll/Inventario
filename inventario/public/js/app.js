@@ -2,6 +2,7 @@ import { verificarSesion, iniciarAuth, cerrarSesion } from './auth.js';
 import { iniciarInventario }  from './inventario.js';
 import { iniciarCategorias }  from './categorias.js';
 import { iniciarMovimientos } from './movimientos.js';
+import { iniciarCotizaciones } from './cotizaciones.js';
 import { iniciarReportes }    from './reportes.js';
 import { iniciarUsuarios }    from './usuarios.js';
 
@@ -13,11 +14,12 @@ const navToggle   = document.getElementById('nav-toggle');
 const sidebar     = document.getElementById('sidebar');
 
 const VISTAS = {
-  inventario:  iniciarInventario,
-  categorias:  iniciarCategorias,
-  movimientos: iniciarMovimientos,
-  reportes:    iniciarReportes,
-  usuarios:    iniciarUsuarios,
+  inventario:   iniciarInventario,
+  categorias:   iniciarCategorias,
+  movimientos:  iniciarMovimientos,
+  cotizaciones: iniciarCotizaciones,
+  reportes:     iniciarReportes,
+  usuarios:     iniciarUsuarios,
 };
 
 const iniciadas = new Set();
@@ -35,7 +37,7 @@ function mostrarApp(usuario) {
   userDisplay.textContent = usuario.nombre;
 
   // Solo admins ven todo; usuarios normales solo ven Inventario
-  const soloAdmin = ['movimientos', 'categorias', 'reportes', 'usuarios'];
+  const soloAdmin = ['movimientos', 'categorias', 'cotizaciones', 'reportes', 'usuarios'];
   document.querySelectorAll('.nav-link').forEach(a => {
     const esAdminOnly = soloAdmin.includes(a.dataset.view);
     a.parentElement.style.display = (esAdminOnly && usuario.rol !== 'admin') ? 'none' : '';
