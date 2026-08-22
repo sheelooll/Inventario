@@ -1,6 +1,9 @@
-# Configuración de Cloudflare Pages.
-# "name" DEBE coincidir con el nombre de tu proyecto en el dashboard de Cloudflare.
-# "pages_build_output_dir" apunta a la carpeta con el sitio estático (relativa a la raíz del repo).
+# Configuración de Cloudflare Worker con assets estáticos.
+# "name" DEBE coincidir con el nombre de tu Worker en el dashboard de Cloudflare.
+# El sitio es 100% estático: sin "main", el Worker solo sirve la carpeta de assets.
 name = "inventario"
-pages_build_output_dir = "inventario/public"
 compatibility_date = "2024-11-01"
+
+[assets]
+directory = "./inventario/public"
+not_found_handling = "404-page"
