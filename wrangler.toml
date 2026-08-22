@@ -1,0 +1,6 @@
+# Configuración de Cloudflare Pages.
+# "name" DEBE coincidir con el nombre de tu proyecto en el dashboard de Cloudflare.
+# "pages_build_output_dir" apunta a la carpeta con el sitio estático (relativa a la raíz del repo).
+name = "inventario"
+pages_build_output_dir = "inventario/public"
+compatibility_date = "2024-11-01"
