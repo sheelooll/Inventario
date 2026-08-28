@@ -134,7 +134,7 @@ function renderTabla() {
         <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
         <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})">✎ Editar</button>
         ${esFirst
-          ? `<button class="btn btn-sq btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
+          ? `<button class="btn btn-sq btn-wide btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
              <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>`
           : `<button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')">🗑</button>`}
       `;

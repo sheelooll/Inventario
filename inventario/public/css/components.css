@@ -79,7 +79,8 @@
   font-size: 1.1rem; font-weight: 700; line-height: 1;
   flex: 0 0 auto;
 }
-.btn-sq.btn-edit {
+.btn-sq.btn-edit,
+.btn-sq.btn-wide {
   width: auto; padding: 0 .7rem; font-size: .82rem; font-weight: 600;
 }
 .btn-sq.btn-trash {
