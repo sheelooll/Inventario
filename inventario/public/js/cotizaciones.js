@@ -189,7 +189,12 @@ async function cargarLogo() {
       canvas.width  = img.naturalWidth;
       canvas.height = img.naturalHeight;
       canvas.getContext('2d').drawImage(img, 0, 0);
-      try { _logoDataURL = canvas.toDataURL('image/png'); } catch { _logoDataURL = null; }
+      try {
+        _logoDataURL = {
+          url:   canvas.toDataURL('image/png'),
+          ratio: img.naturalWidth / img.naturalHeight, // ancho/alto real
+        };
+      } catch { _logoDataURL = null; }
       resolve(_logoDataURL);
     };
     img.onerror = () => resolve(null);
@@ -205,12 +210,13 @@ async function generarPDF() {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
 
-  // Logo
+  // Logo — se ajusta dentro de una caja manteniendo la proporción real (sin recortes)
   const logo = await cargarLogo();
   if (logo) {
-    // 211x300 px → mantener proporción, ancho 18mm
-    const w = 18, h = w * (300 / 211);
-    doc.addImage(logo, 'PNG', 14, 12, w, h);
+    const maxW = 20, maxH = 24;            // caja disponible para el logo (mm)
+    let w = maxW, h = w / logo.ratio;      // ajustar por ancho
+    if (h > maxH) { h = maxH; w = h * logo.ratio; } // si excede, ajustar por alto
+    doc.addImage(logo.url, 'PNG', 14, 12, w, h);
   }
 
   // Encabezado
