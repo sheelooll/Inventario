@@ -134,7 +134,8 @@ function renderTabla() {
         <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
         <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})">✎ Editar</button>
         ${esFirst
-          ? `<button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>`
+          ? `<button class="btn btn-sq btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
+             <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>`
           : `<button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')">🗑</button>`}
       `;
 
@@ -394,6 +395,75 @@ function abrirModalMovimiento(productoId, loteId, tipoPreset) {
   });
 }
 
+// ===== Modal nuevo lote =====
+function abrirModalNuevoLote(productoId) {
+  const prod = _productos.find(p => p.id === productoId);
+  if (!prod) return;
+
+  abrirModal(`
+    <div class="modal-header">
+      <h3>Agregar lote — ${esc(prod.nombre)}</h3>
+      <button class="modal-close" aria-label="Cerrar">✕</button>
+    </div>
+    <form id="form-nuevo-lote" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Cantidad *</label>
+          <input type="number" name="cantidad" min="1" value="1" required>
+        </div>
+        <div class="form-group">
+          <label>Código de lote</label>
+          <input type="text" name="codigo_lote" placeholder="Ej: L2025-001 (opcional)">
+        </div>
+        <div class="form-group">
+          <label>Vencimiento</label>
+          <input type="date" name="vencimiento">
+        </div>
+        <div class="form-group">
+          <label>Ubicación</label>
+          ${selectUbicacion()}
+        </div>
+        <div class="form-group">
+          <label>N° de compra</label>
+          <input type="text" name="numero_compra" placeholder="Opcional">
+        </div>
+      </div>
+      <p style="color:var(--color-text-muted);font-size:.82rem;margin:.25rem 0 .5rem">
+        Si el código de lote ya existe, se sumará la cantidad a ese lote.
+      </p>
+      <div id="form-lote-error" class="alert alert-error hidden" style="margin-top:.5rem"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary modal-close">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Agregar lote</button>
+      </div>
+    </form>
+  `, { size: 'lg' });
+
+  document.getElementById('form-nuevo-lote').addEventListener('submit', async e => {
+    e.preventDefault();
+    const raw   = Object.fromEntries(new FormData(e.target));
+    const errEl = document.getElementById('form-lote-error');
+    errEl.classList.add('hidden');
+    try {
+      await lotesApi.crear({
+        producto_id:      productoId,
+        cantidad:         raw.cantidad,
+        codigo_lote:      raw.codigo_lote  || null,
+        vencimiento:      raw.vencimiento  || null,
+        ubicacion_id:     raw.ubicacion_id || null,
+        ubicacion_nombre: _ubicaciones.find(u => u.id === raw.ubicacion_id)?.nombre || null,
+        numero_compra:    raw.numero_compra || null,
+      });
+      toast('Lote agregado');
+      cerrarModal();
+      cargar();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.remove('hidden');
+    }
+  });
+}
+
 // ===== Modal editar item (producto + lote) =====
 function abrirModalEditarItem(productoId, loteId) {
   const prod = _productos.find(p => p.id === productoId);
@@ -557,6 +627,7 @@ async function exportarInventario() {
 window._addStock = (prodId, loteId) => abrirModalMovimiento(prodId, loteId, 'entrada');
 window._subStock = (prodId, loteId) => abrirModalMovimiento(prodId, loteId, 'salida');
 window._editItem = (prodId, loteId) => abrirModalEditarItem(prodId, loteId);
+window._addLote  = (prodId) => abrirModalNuevoLote(prodId);
 window._delProducto  = async (id) => {
   const p  = _productos.find(p => p.id === id);
   const ok = await confirmar(`¿Eliminar <strong>${esc(p?.nombre||id)}</strong>?`);

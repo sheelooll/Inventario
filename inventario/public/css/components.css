@@ -488,6 +488,18 @@ select option { background: #fff; color: var(--color-text); }
 .cot-item-sub    { font-weight: 700; min-width: 64px; text-align: right; font-size: .85rem; }
 .cot-item .btn-sq.btn-trash { width: 28px; height: 28px; }
 
+.cotizacion-subtotal {
+  padding: .5rem 0 0;
+  margin-top: .25rem;
+  border-top: 1px solid rgba(148,163,184,.3);
+}
+.cot-linea-resumen {
+  display: flex; justify-content: space-between;
+  font-size: .85rem; padding: .15rem 0;
+  color: var(--color-text-muted);
+}
+.cot-linea-descuento span:last-child { color: #16a34a; font-weight: 600; }
+
 .cotizacion-total {
   display: flex; justify-content: space-between; align-items: baseline;
   padding: .75rem 0; margin-top: .25rem;

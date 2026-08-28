@@ -4,6 +4,9 @@ import { toast, abrirModal, cerrarModal, confirmar } from './ui.js';
 let _examenes = [];
 const _carro  = new Map(); // examenId -> cantidad
 let _logoDataURL = null;    // cache del logo para el PDF
+let _descuento10 = false;   // descuento del 10% aplicado
+
+const TASA_DESCUENTO = 0.10;
 
 export function iniciarCotizaciones() {
   cargar();
@@ -11,7 +14,13 @@ export function iniciarCotizaciones() {
   document.getElementById('cot-buscar').addEventListener('input', renderCatalogo);
   document.getElementById('btn-descargar-pdf').addEventListener('click', generarPDF);
   document.getElementById('btn-limpiar-cot').addEventListener('click', limpiarCarro);
+  document.getElementById('btn-descuento-cot').addEventListener('click', toggleDescuento);
   document.addEventListener('refresh:cotizaciones', cargar);
+}
+
+function toggleDescuento() {
+  _descuento10 = !_descuento10;
+  renderCarro();
 }
 
 async function cargar() {
@@ -54,9 +63,13 @@ function renderCatalogo() {
 
 // ===== Carro / cotización =====
 function renderCarro() {
-  const cont = document.getElementById('cot-items');
+  const cont       = document.getElementById('cot-items');
+  const resumenEl  = document.getElementById('cot-resumen-desc');
+  const btnDesc    = document.getElementById('btn-descuento-cot');
+
   if (!_carro.size) {
     cont.innerHTML = '<p class="text-muted" style="text-align:center;padding:1.5rem 0;font-size:.85rem">Agrega exámenes desde el catálogo</p>';
+    resumenEl.classList.add('hidden');
     document.getElementById('cot-total').textContent = fmtCLP(0);
     return;
   }
@@ -86,7 +99,23 @@ function renderCarro() {
   }
 
   cont.innerHTML = filas.join('');
-  document.getElementById('cot-total').textContent = fmtCLP(total);
+
+  const descuento = _descuento10 ? Math.round(total * TASA_DESCUENTO) : 0;
+  const totalFinal = total - descuento;
+
+  if (_descuento10) {
+    resumenEl.classList.remove('hidden');
+    document.getElementById('cot-subtotal').textContent  = fmtCLP(total);
+    document.getElementById('cot-descuento').textContent = '-' + fmtCLP(descuento);
+  } else {
+    resumenEl.classList.add('hidden');
+  }
+
+  btnDesc.textContent = _descuento10 ? '✓ Descuento 10% aplicado' : '🏷 Aplicar descuento 10%';
+  btnDesc.classList.toggle('btn-success', _descuento10);
+  btnDesc.classList.toggle('btn-secondary', !_descuento10);
+
+  document.getElementById('cot-total').textContent = fmtCLP(totalFinal);
 }
 
 function agregarAlCarro(id) {
@@ -97,6 +126,7 @@ function agregarAlCarro(id) {
 function limpiarCarro() {
   if (!_carro.size) return;
   _carro.clear();
+  _descuento10 = false;
   document.getElementById('cot-cliente').value = '';
   renderCarro();
 }
@@ -221,11 +251,22 @@ async function generarPDF() {
     body.push([ex.nombre, String(cantidad), fmtCLP(ex.precio), fmtCLP(subtotal)]);
   }
 
+  const descuento  = _descuento10 ? Math.round(total * TASA_DESCUENTO) : 0;
+  const totalFinal = total - descuento;
+
+  const foot = _descuento10
+    ? [
+        ['', '', 'Subtotal', fmtCLP(total)],
+        ['', '', 'Descuento (10%)', '-' + fmtCLP(descuento)],
+        ['', '', 'TOTAL', fmtCLP(totalFinal)],
+      ]
+    : [['', '', 'TOTAL', fmtCLP(totalFinal)]];
+
   doc.autoTable({
     startY: cursorY + 2,
     head: [['Examen', 'Cantidad', 'Precio unit.', 'Subtotal']],
     body,
-    foot: [['', '', 'TOTAL', fmtCLP(total)]],
+    foot,
     theme: 'striped',
     headStyles: { fillColor: [37, 99, 235], textColor: 255 },
     footStyles: { fillColor: [239, 246, 255], textColor: [30, 64, 175], fontStyle: 'bold' },

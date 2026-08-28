@@ -219,11 +219,22 @@
               <input type="text" id="cot-cliente" placeholder="Nombre (opcional)">
             </div>
             <div id="cot-items" class="cotizacion-items"></div>
+            <div id="cot-resumen-desc" class="cotizacion-subtotal hidden">
+              <div class="cot-linea-resumen">
+                <span>Subtotal</span>
+                <span id="cot-subtotal">$0</span>
+              </div>
+              <div class="cot-linea-resumen cot-linea-descuento">
+                <span>Descuento (10%)</span>
+                <span id="cot-descuento">-$0</span>
+              </div>
+            </div>
             <div class="cotizacion-total">
               <span>Total</span>
               <strong id="cot-total">$0</strong>
             </div>
             <div class="cotizacion-acciones">
+              <button id="btn-descuento-cot" class="btn btn-secondary btn-full">🏷 Aplicar descuento 10%</button>
               <button id="btn-descargar-pdf" class="btn btn-primary btn-full">⬇ Descargar PDF</button>
               <button id="btn-limpiar-cot" class="btn btn-secondary btn-full">Limpiar cotización</button>
             </div>
