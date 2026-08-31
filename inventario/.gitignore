@@ -1,5 +1,7 @@
 node_modules/
 data/
 .env
+# Firebase Admin service-account keys — NUNCA commitear (llave privada)
 scripts/serviceAccount.json
 serviceAccount.json
+**/serviceAccount*.json
