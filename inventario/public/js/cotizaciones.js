@@ -6,7 +6,12 @@ const _carro  = new Map(); // examenId -> cantidad
 let _logoDataURL = null;    // cache del logo para el PDF
 let _descuento10 = false;   // descuento del 10% aplicado
 
-const TASA_DESCUENTO = 0.10;
+// Precio con 10% de descuento del examen (usa el valor guardado; si no existe,
+// lo calcula como el 10% menos sobre el precio normal)
+function precioDesc(ex) {
+  const pd = Number(ex?.precio_desc) || 0;
+  return pd > 0 ? pd : Math.round((Number(ex?.precio) || 0) * 0.9);
+}
 
 export function iniciarCotizaciones() {
   cargar();
@@ -25,7 +30,7 @@ function toggleDescuento() {
 
 async function cargar() {
   try {
-    await examApi.sembrarEjemplos();      // crea ejemplos solo la primera vez
+    await examApi.sincronizarCatalogo();  // carga/actualiza el catálogo PRECIOS 2026
     _examenes = await examApi.listar();
     renderCatalogo();
     renderCarro();
@@ -74,18 +79,21 @@ function renderCarro() {
     return;
   }
 
-  let total = 0;
+  let total     = 0;   // total con precios normales
+  let totalDesc = 0;   // total con precios de 10% descuento
   const filas = [];
   for (const [id, cantidad] of _carro) {
     const ex = _examenes.find(e => e.id === id);
     if (!ex) continue;
-    const subtotal = (ex.precio || 0) * cantidad;
-    total += subtotal;
+    const precioUnit = _descuento10 ? precioDesc(ex) : (ex.precio || 0);
+    const subtotal   = precioUnit * cantidad;
+    total     += (ex.precio || 0) * cantidad;
+    totalDesc += precioDesc(ex)   * cantidad;
     filas.push(`
       <div class="cot-item">
         <div class="cot-item-info">
           <strong>${esc(ex.nombre)}</strong>
-          <span class="text-muted" style="font-size:.75rem">${fmtCLP(ex.precio)} c/u</span>
+          <span class="text-muted" style="font-size:.75rem">${fmtCLP(precioUnit)} c/u</span>
         </div>
         <div class="cot-item-qty">
           <button class="btn btn-sq btn-secondary" onclick="window._cotDec('${id}')">−</button>
@@ -100,8 +108,8 @@ function renderCarro() {
 
   cont.innerHTML = filas.join('');
 
-  const descuento = _descuento10 ? Math.round(total * TASA_DESCUENTO) : 0;
-  const totalFinal = total - descuento;
+  const descuento  = _descuento10 ? total - totalDesc : 0;
+  const totalFinal = _descuento10 ? totalDesc : total;
 
   if (_descuento10) {
     resumenEl.classList.remove('hidden');
@@ -147,10 +155,15 @@ function abrirFormExamen(id) {
       </div>
       <div class="form-group">
         <label>Precio (CLP) *</label>
-        <input type="number" name="precio" value="${ex?.precio ?? ''}" min="0" required placeholder="Ej: 6500">
+        <input type="number" id="ex-precio" name="precio" value="${ex?.precio ?? ''}" min="0" required placeholder="Ej: 6500">
       </div>
       <div class="form-group">
-        <label>Descripción</label>
+        <label>Precio con 10% de descuento (CLP)</label>
+        <input type="number" id="ex-precio-desc" name="precio_desc" value="${ex?.precio_desc ?? ''}" min="0" placeholder="Se calcula automáticamente">
+        <small class="text-muted" style="font-size:.72rem">Se autocompleta con el 10% menos; puedes ajustarlo manualmente.</small>
+      </div>
+      <div class="form-group">
+        <label>Categoría / descripción</label>
         <input type="text" name="descripcion" value="${esc(ex?.descripcion||'')}" placeholder="Opcional">
       </div>
       <div id="form-examen-error" class="alert alert-error hidden" style="margin-top:.5rem"></div>
@@ -160,6 +173,17 @@ function abrirFormExamen(id) {
       </div>
     </form>
   `, { size: 'sm' });
+
+  // Autocompletar el precio con descuento (10% menos) mientras no se edite a mano
+  const inpPrecio = document.getElementById('ex-precio');
+  const inpDesc   = document.getElementById('ex-precio-desc');
+  let descManual  = inpDesc.value !== '';
+  inpDesc.addEventListener('input', () => { descManual = true; });
+  inpPrecio.addEventListener('input', () => {
+    if (descManual) return;
+    const p = Number(inpPrecio.value);
+    inpDesc.value = p > 0 ? Math.round(p * 0.9) : '';
+  });
 
   document.getElementById('form-examen').addEventListener('submit', async e => {
     e.preventDefault();
@@ -247,18 +271,21 @@ async function generarPDF() {
   }
 
   // Tabla de exámenes
-  let total = 0;
+  let total     = 0;
+  let totalDesc = 0;
   const body = [];
   for (const [id, cantidad] of _carro) {
     const ex = _examenes.find(e => e.id === id);
     if (!ex) continue;
-    const subtotal = (ex.precio || 0) * cantidad;
-    total += subtotal;
-    body.push([ex.nombre, String(cantidad), fmtCLP(ex.precio), fmtCLP(subtotal)]);
+    const precioUnit = _descuento10 ? precioDesc(ex) : (ex.precio || 0);
+    const subtotal   = precioUnit * cantidad;
+    total     += (ex.precio || 0) * cantidad;
+    totalDesc += precioDesc(ex)   * cantidad;
+    body.push([ex.nombre, String(cantidad), fmtCLP(precioUnit), fmtCLP(subtotal)]);
   }
 
-  const descuento  = _descuento10 ? Math.round(total * TASA_DESCUENTO) : 0;
-  const totalFinal = total - descuento;
+  const descuento  = _descuento10 ? total - totalDesc : 0;
+  const totalFinal = _descuento10 ? totalDesc : total;
 
   const foot = _descuento10
     ? [
