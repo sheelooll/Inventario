@@ -1,9 +1,10 @@
 import { productos as prodApi, categorias as catApi, movimientos as movApi, lotes as lotesApi, ubicaciones as ubApi } from './api.js';
 import { toast, abrirModal, cerrarModal, confirmar, estadoBadge, fmtFechaSolo, fmtNum } from './ui.js';
 
-let _productos  = [];
-let _categorias = [];
-let _ubicaciones = [];
+let _productos        = [];
+let _categorias       = [];
+let _ubicaciones      = [];
+let _expandedProducts = new Set(); // IDs de productos con lotes desplegados
 
 export function iniciarInventario() {
   cargarCategoriasFiltro();
@@ -93,72 +94,124 @@ function renderTabla() {
   const rows  = [];
 
   for (const p of lista) {
-    const lotesArr = (p.lotes && p.lotes.length > 0) ? p.lotes : [null];
-    const totalLotes = lotesArr.length;
-    const cantTotal  = (p.lotes && p.lotes.length > 1)
+    const lotesArr           = (p.lotes && p.lotes.length > 0) ? p.lotes : [null];
+    const totalLotes         = lotesArr.length;
+    const tieneMultiplesLotes = totalLotes > 1;
+    const cantTotal           = tieneMultiplesLotes
       ? p.lotes.reduce((s, l) => s + (l.cantidad || 0), 0)
-      : null; // null = no mostrar total extra (1 lote o sin lotes)
+      : null;
+    const estaExpandido = tieneMultiplesLotes && _expandedProducts.has(p.id);
 
-    lotesArr.forEach((lote, idx) => {
-      const esFirst = idx === 0;
-      const esLast  = idx === totalLotes - 1;
+    const thumb = p.foto
+      ? `<img src="${p.foto}" class="prod-thumb prod-thumb-click" alt="${esc(p.nombre)}" loading="lazy" onclick="window._verFoto('${p.foto}','${esc(p.nombre)}')">`
+      : `<div class="prod-thumb-placeholder" title="Sin foto">📷</div>`;
 
-      const cantLote  = lote ? lote.cantidad  : p.cantidad;
-      const vencLote  = lote ? lote.vencimiento : p.vencimiento;
-      const codLote   = lote ? (lote.codigo_lote || null) : null;
-      const loteId    = lote ? lote.id : null;
-
-      const estadoLote  = estadoCalc(cantLote, p.umbral_critico, p.umbral_bajo);
-      const vencido     = !!(vencLote && vencLote < today);
-      const por_vencer  = !!(vencLote && vencLote >= today && vencLote <= en30);
-
-      const thumb = esFirst
-        ? (p.foto
-            ? `<img src="${p.foto}" class="prod-thumb prod-thumb-click" alt="${esc(p.nombre)}" loading="lazy" onclick="window._verFoto('${p.foto}','${esc(p.nombre)}')">`
-            : `<div class="prod-thumb-placeholder" title="Sin foto">📷</div>`)
-        : '';
-
-      const ubicNombre   = lote?.ubicacion_nombre || null;
-      const numCompra    = lote?.numero_compra    || null;
-
-      let nombreCell;
-      if (esFirst) {
-        nombreCell = `<strong>${esc(p.nombre)}</strong>`;
-        if (codLote) nombreCell += `<br><span class="lote-badge">Lote: ${esc(codLote)}</span>`;
-        else if (totalLotes === 1) nombreCell += `<br><span class="text-muted" style="font-size:.72rem">Sin código de lote</span>`;
-      } else {
-        nombreCell = `<span style="padding-left:.75rem;color:var(--color-text-muted)">↳</span> <span class="lote-badge">${codLote ? esc(codLote) : '(sin código)'}</span>`;
-      }
-      if (numCompra) nombreCell += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
-
-      const loteArg = loteId ? `'${loteId}'` : 'null';
-      const accionesBotones = `
-        <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',${loteArg})">+</button>
-        <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
-        <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})">✎ Editar</button>
-        ${esFirst
-          ? `<button class="btn btn-sq btn-wide btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
-             <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>`
-          : `<button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')">🗑</button>`}
-      `;
-
+    if (tieneMultiplesLotes) {
+      // ── Fila resumen del producto (siempre visible) ──────────────────────
+      const estadoProd = estadoCalc(cantTotal, p.umbral_critico, p.umbral_bajo);
       rows.push(`
-        <tr class="${esFirst ? 'prod-first-lot' : 'prod-extra-lot'}${esLast ? ' prod-last-lot' : ''}">
+        <tr class="prod-first-lot${!estaExpandido ? ' prod-last-lot' : ''}">
           <td>${thumb}</td>
-          <td>${nombreCell}</td>
-          <td>${esFirst ? esc(p.categoria_nombre) : ''}</td>
-          <td class="text-right">
-            ${esFirst && cantTotal !== null
-              ? `<strong>${fmtNum(cantTotal)}</strong><br><span class="lotes-total-sub">${fmtNum(cantLote)} este lote</span>`
-              : fmtNum(cantLote)}
+          <td><strong>${esc(p.nombre)}</strong></td>
+          <td>${esc(p.categoria_nombre)}</td>
+          <td class="text-right"><strong>${fmtNum(cantTotal)}</strong></td>
+          <td>${estadoBadge(estadoProd, false, false)}</td>
+          <td></td>
+          <td></td>
+          <td class="acciones">
+            <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',null)">+</button>
+            <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',null)">−</button>
+            <button class="btn btn-sq btn-lotes-toggle${estaExpandido ? ' activo' : ''}" title="${estaExpandido ? 'Colapsar lotes' : 'Ver lotes'}" onclick="window._toggleLotes('${p.id}')">${estaExpandido ? '▲' : '▼'} ${totalLotes} lotes</button>
+            <button class="btn btn-sq btn-wide btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
+            <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>
           </td>
-          <td>${estadoBadge(estadoLote, vencido, por_vencer)}</td>
-          <td>${fmtFechaSolo(vencLote)}</td>
-          <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>
-          <td class="acciones">${accionesBotones}</td>
         </tr>
       `);
-    });
+
+      if (estaExpandido) {
+        // ── Filas de lotes individuales ──────────────────────────────────
+        lotesArr.forEach((lote, idx) => {
+          const esLast     = idx === totalLotes - 1;
+          const cantLote   = lote.cantidad;
+          const vencLote   = lote.vencimiento;
+          const codLote    = lote.codigo_lote || null;
+          const loteId     = lote.id;
+          const ubicNombre = lote.ubicacion_nombre || null;
+          const numCompra  = lote.numero_compra    || null;
+          const estadoLote = estadoCalc(cantLote, p.umbral_critico, p.umbral_bajo);
+          const vencido    = !!(vencLote && vencLote < today);
+          const porVencer  = !!(vencLote && vencLote >= today && vencLote <= en30);
+          const loteArg    = `'${loteId}'`;
+          let nombreLote   = `<span class="lote-indent">↳</span> <span class="lote-badge">${codLote ? esc(codLote) : '(sin código)'}</span>`;
+          if (numCompra) nombreLote += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
+          rows.push(`
+            <tr class="prod-extra-lot${esLast ? ' prod-last-lot' : ''}">
+              <td></td>
+              <td>${nombreLote}</td>
+              <td></td>
+              <td class="text-right">${fmtNum(cantLote)}</td>
+              <td>${estadoBadge(estadoLote, vencido, porVencer)}</td>
+              <td>${fmtFechaSolo(vencLote)}</td>
+              <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>
+              <td class="acciones">
+                <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',${loteArg})">+</button>
+                <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
+                <button class="btn btn-sq btn-edit btn-secondary" title="Editar lote" onclick="window._editItem('${p.id}',${loteArg})">✎</button>
+                <button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')">🗑</button>
+              </td>
+            </tr>
+          `);
+        });
+
+        // ── Barra de total ───────────────────────────────────────────────
+        rows.push(`
+          <tr class="prod-lotes-total-bar">
+            <td></td>
+            <td colspan="2" class="prod-lotes-total-label">Total (${totalLotes} lotes)</td>
+            <td class="text-right prod-lotes-total-value">${fmtNum(cantTotal)}</td>
+            <td colspan="4"></td>
+          </tr>
+        `);
+      }
+
+    } else {
+      // ── Producto con un solo lote (comportamiento original) ──────────
+      const lote       = lotesArr[0];
+      const cantLote   = lote ? lote.cantidad   : p.cantidad;
+      const vencLote   = lote ? lote.vencimiento : p.vencimiento;
+      const codLote    = lote ? (lote.codigo_lote || null) : null;
+      const loteId     = lote ? lote.id : null;
+      const ubicNombre = lote?.ubicacion_nombre || null;
+      const numCompra  = lote?.numero_compra    || null;
+      const estadoLote = estadoCalc(cantLote, p.umbral_critico, p.umbral_bajo);
+      const vencido    = !!(vencLote && vencLote < today);
+      const porVencer  = !!(vencLote && vencLote >= today && vencLote <= en30);
+      const loteArg    = loteId ? `'${loteId}'` : 'null';
+
+      let nombreCell = `<strong>${esc(p.nombre)}</strong>`;
+      if (codLote) nombreCell += `<br><span class="lote-badge">Lote: ${esc(codLote)}</span>`;
+      else nombreCell += `<br><span class="text-muted" style="font-size:.72rem">Sin código de lote</span>`;
+      if (numCompra) nombreCell += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
+
+      rows.push(`
+        <tr class="prod-first-lot prod-last-lot">
+          <td>${thumb}</td>
+          <td>${nombreCell}</td>
+          <td>${esc(p.categoria_nombre)}</td>
+          <td class="text-right">${fmtNum(cantLote)}</td>
+          <td>${estadoBadge(estadoLote, vencido, porVencer)}</td>
+          <td>${fmtFechaSolo(vencLote)}</td>
+          <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>
+          <td class="acciones">
+            <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',${loteArg})">+</button>
+            <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
+            <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})">✎ Editar</button>
+            <button class="btn btn-sq btn-wide btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
+            <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>
+          </td>
+        </tr>
+      `);
+    }
   }
 
   tbody.innerHTML = rows.join('');
@@ -634,7 +687,12 @@ async function exportarInventario() {
 window._addStock = (prodId, loteId) => abrirModalMovimiento(prodId, loteId, 'entrada');
 window._subStock = (prodId, loteId) => abrirModalMovimiento(prodId, loteId, 'salida');
 window._editItem = (prodId, loteId) => abrirModalEditarItem(prodId, loteId);
-window._addLote  = (prodId) => abrirModalNuevoLote(prodId);
+window._addLote     = (prodId) => abrirModalNuevoLote(prodId);
+window._toggleLotes = (prodId) => {
+  if (_expandedProducts.has(prodId)) _expandedProducts.delete(prodId);
+  else _expandedProducts.add(prodId);
+  renderTabla();
+};
 window._delProducto  = async (id) => {
   const p  = _productos.find(p => p.id === id);
   const ok = await confirmar(`¿Eliminar <strong>${esc(p?.nombre||id)}</strong>?`);
