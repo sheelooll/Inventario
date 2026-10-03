@@ -143,7 +143,7 @@ function renderTabla() {
           const porVencer  = !!(vencLote && vencLote >= today && vencLote <= en30);
           const loteArg    = `'${loteId}'`;
           let nombreLote   = `<span class="lote-indent">↳</span> <span class="lote-badge">${codLote ? esc(codLote) : '(sin código)'}</span>`;
-          if (numCompra) nombreLote += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
+          if (numCompra) nombreLote += `<br><span class="oc-badge">OC: ${esc(numCompra)}</span>`;
           rows.push(`
             <tr class="prod-extra-lot${esLast ? ' prod-last-lot' : ''}">
               <td></td>
@@ -191,7 +191,7 @@ function renderTabla() {
       let nombreCell = `<strong>${esc(p.nombre)}</strong>`;
       if (codLote) nombreCell += `<br><span class="lote-badge">Lote: ${esc(codLote)}</span>`;
       else nombreCell += `<br><span class="text-muted" style="font-size:.72rem">Sin código de lote</span>`;
-      if (numCompra) nombreCell += ` <span style="font-size:.72rem;color:var(--color-text-muted)">OC: ${esc(numCompra)}</span>`;
+      if (numCompra) nombreCell += `<br><span class="oc-badge">OC: ${esc(numCompra)}</span>`;
 
       rows.push(`
         <tr class="prod-first-lot prod-last-lot">

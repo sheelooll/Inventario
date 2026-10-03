@@ -619,6 +619,19 @@ select option { background: #fff; color: var(--color-text); }
   color: var(--color-text-muted);
 }
 
+/* Badge de número/orden de compra */
+.oc-badge {
+  display: inline-block;
+  font-size: .7rem;
+  font-weight: 600;
+  background: rgba(234,179,8,.15);
+  color: #92400e;
+  border: 1px solid rgba(234,179,8,.4);
+  border-radius: 4px;
+  padding: 0 .35rem;
+  margin-top: .15rem;
+}
+
 @media (max-width: 820px) {
   .cotizacion-layout { grid-template-columns: 1fr; }
   .cotizacion-carro  { position: static; }
