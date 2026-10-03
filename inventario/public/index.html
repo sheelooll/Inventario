@@ -225,7 +225,7 @@
                 <span id="cot-subtotal">$0</span>
               </div>
               <div class="cot-linea-resumen cot-linea-descuento">
-                <span>Descuento (10%)</span>
+                <span id="cot-descuento-label">Descuento</span>
                 <span id="cot-descuento">-$0</span>
               </div>
             </div>
@@ -233,8 +233,23 @@
               <span>Total</span>
               <strong id="cot-total">$0</strong>
             </div>
+            <div class="tarjeta-vecino-box">
+              <div class="tarjeta-vecino-header">
+                <span>🪪 ¿Tiene Tarjeta de Vecino?</span>
+                <label class="tv-toggle">
+                  <input type="checkbox" id="chk-tarjeta-vecino">
+                  <span class="tv-slider"></span>
+                </label>
+              </div>
+              <div id="tv-pct-row" class="tv-pct-row hidden">
+                <label for="inp-desc-pct">¿Cuánto es el descuento que se aplica?</label>
+                <div class="tv-pct-input">
+                  <input type="number" id="inp-desc-pct" min="0" max="100" value="10" step="1">
+                  <span>%</span>
+                </div>
+              </div>
+            </div>
             <div class="cotizacion-acciones">
-              <button id="btn-descuento-cot" class="btn btn-secondary btn-full">🏷 Aplicar descuento 10%</button>
               <button id="btn-descargar-pdf" class="btn btn-primary btn-full">⬇ Descargar PDF</button>
               <button id="btn-limpiar-cot" class="btn btn-secondary btn-full">Limpiar cotización</button>
             </div>

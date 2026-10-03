@@ -95,6 +95,9 @@ function renderTabla() {
   for (const p of lista) {
     const lotesArr = (p.lotes && p.lotes.length > 0) ? p.lotes : [null];
     const totalLotes = lotesArr.length;
+    const cantTotal  = (p.lotes && p.lotes.length > 1)
+      ? p.lotes.reduce((s, l) => s + (l.cantidad || 0), 0)
+      : null; // null = no mostrar total extra (1 lote o sin lotes)
 
     lotesArr.forEach((lote, idx) => {
       const esFirst = idx === 0;
@@ -144,7 +147,11 @@ function renderTabla() {
           <td>${thumb}</td>
           <td>${nombreCell}</td>
           <td>${esFirst ? esc(p.categoria_nombre) : ''}</td>
-          <td class="text-right">${fmtNum(cantLote)}</td>
+          <td class="text-right">
+            ${esFirst && cantTotal !== null
+              ? `<strong>${fmtNum(cantTotal)}</strong><br><span class="lotes-total-sub">${fmtNum(cantLote)} este lote</span>`
+              : fmtNum(cantLote)}
+          </td>
           <td>${estadoBadge(estadoLote, vencido, por_vencer)}</td>
           <td>${fmtFechaSolo(vencLote)}</td>
           <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>

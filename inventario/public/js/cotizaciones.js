@@ -3,15 +3,8 @@ import { toast, abrirModal, cerrarModal, confirmar } from './ui.js';
 
 let _examenes = [];
 const _carro  = new Map(); // examenId -> cantidad
-let _logoDataURL = null;    // cache del logo para el PDF
-let _descuento10 = false;   // descuento del 10% aplicado
-
-// Precio con 10% de descuento del examen (usa el valor guardado; si no existe,
-// lo calcula como el 10% menos sobre el precio normal)
-function precioDesc(ex) {
-  const pd = Number(ex?.precio_desc) || 0;
-  return pd > 0 ? pd : Math.round((Number(ex?.precio) || 0) * 0.9);
-}
+let _logoDataURL  = null;  // cache del logo para el PDF
+let _descuentoPct = 0;     // porcentaje de descuento activo (0 = sin descuento)
 
 export function iniciarCotizaciones() {
   cargar();
@@ -19,13 +12,23 @@ export function iniciarCotizaciones() {
   document.getElementById('cot-buscar').addEventListener('input', renderCatalogo);
   document.getElementById('btn-descargar-pdf').addEventListener('click', generarPDF);
   document.getElementById('btn-limpiar-cot').addEventListener('click', limpiarCarro);
-  document.getElementById('btn-descuento-cot').addEventListener('click', toggleDescuento);
-  document.addEventListener('refresh:cotizaciones', cargar);
-}
 
-function toggleDescuento() {
-  _descuento10 = !_descuento10;
-  renderCarro();
+  const chk = document.getElementById('chk-tarjeta-vecino');
+  const pctRow = document.getElementById('tv-pct-row');
+  const inpPct = document.getElementById('inp-desc-pct');
+
+  chk.addEventListener('change', () => {
+    pctRow.classList.toggle('hidden', !chk.checked);
+    _descuentoPct = chk.checked ? (Number(inpPct.value) || 0) : 0;
+    renderCarro();
+  });
+  inpPct.addEventListener('input', () => {
+    if (!chk.checked) return;
+    _descuentoPct = Number(inpPct.value) || 0;
+    renderCarro();
+  });
+
+  document.addEventListener('refresh:cotizaciones', cargar);
 }
 
 async function cargar() {
@@ -68,9 +71,8 @@ function renderCatalogo() {
 
 // ===== Carro / cotización =====
 function renderCarro() {
-  const cont       = document.getElementById('cot-items');
-  const resumenEl  = document.getElementById('cot-resumen-desc');
-  const btnDesc    = document.getElementById('btn-descuento-cot');
+  const cont      = document.getElementById('cot-items');
+  const resumenEl = document.getElementById('cot-resumen-desc');
 
   if (!_carro.size) {
     cont.innerHTML = '<p class="text-muted" style="text-align:center;padding:1.5rem 0;font-size:.85rem">Agrega exámenes desde el catálogo</p>';
@@ -79,21 +81,24 @@ function renderCarro() {
     return;
   }
 
-  let total     = 0;   // total con precios normales
-  let totalDesc = 0;   // total con precios de 10% descuento
+  const hayDesc = _descuentoPct > 0;
+  let total     = 0;
+  let totalDesc = 0;
   const filas = [];
+
   for (const [id, cantidad] of _carro) {
     const ex = _examenes.find(e => e.id === id);
     if (!ex) continue;
-    const precioUnit = _descuento10 ? precioDesc(ex) : (ex.precio || 0);
-    const subtotal   = precioUnit * cantidad;
-    total     += (ex.precio || 0) * cantidad;
-    totalDesc += precioDesc(ex)   * cantidad;
+    const precioNormal  = ex.precio || 0;
+    const precioConDesc = hayDesc ? Math.round(precioNormal * (1 - _descuentoPct / 100)) : precioNormal;
+    const subtotal      = precioConDesc * cantidad;
+    total     += precioNormal  * cantidad;
+    totalDesc += precioConDesc * cantidad;
     filas.push(`
       <div class="cot-item">
         <div class="cot-item-info">
           <strong>${esc(ex.nombre)}</strong>
-          <span class="text-muted" style="font-size:.75rem">${fmtCLP(precioUnit)} c/u</span>
+          <span class="text-muted" style="font-size:.75rem">${fmtCLP(precioConDesc)} c/u</span>
         </div>
         <div class="cot-item-qty">
           <button class="btn btn-sq btn-secondary" onclick="window._cotDec('${id}')">−</button>
@@ -108,20 +113,17 @@ function renderCarro() {
 
   cont.innerHTML = filas.join('');
 
-  const descuento  = _descuento10 ? total - totalDesc : 0;
-  const totalFinal = _descuento10 ? totalDesc : total;
+  const descuento  = hayDesc ? total - totalDesc : 0;
+  const totalFinal = hayDesc ? totalDesc : total;
 
-  if (_descuento10) {
+  if (hayDesc) {
     resumenEl.classList.remove('hidden');
-    document.getElementById('cot-subtotal').textContent  = fmtCLP(total);
-    document.getElementById('cot-descuento').textContent = '-' + fmtCLP(descuento);
+    document.getElementById('cot-subtotal').textContent      = fmtCLP(total);
+    document.getElementById('cot-descuento').textContent     = '-' + fmtCLP(descuento);
+    document.getElementById('cot-descuento-label').textContent = `Descuento (${_descuentoPct}%)`;
   } else {
     resumenEl.classList.add('hidden');
   }
-
-  btnDesc.textContent = _descuento10 ? '✓ Descuento 10% aplicado' : '🏷 Aplicar descuento 10%';
-  btnDesc.classList.toggle('btn-success', _descuento10);
-  btnDesc.classList.toggle('btn-secondary', !_descuento10);
 
   document.getElementById('cot-total').textContent = fmtCLP(totalFinal);
 }
@@ -134,7 +136,9 @@ function agregarAlCarro(id) {
 function limpiarCarro() {
   if (!_carro.size) return;
   _carro.clear();
-  _descuento10 = false;
+  _descuentoPct = 0;
+  const chk = document.getElementById('chk-tarjeta-vecino');
+  if (chk) { chk.checked = false; document.getElementById('tv-pct-row').classList.add('hidden'); }
   document.getElementById('cot-cliente').value = '';
   renderCarro();
 }
@@ -271,26 +275,28 @@ async function generarPDF() {
   }
 
   // Tabla de exámenes
+  const hayDesc = _descuentoPct > 0;
   let total     = 0;
   let totalDesc = 0;
   const body = [];
   for (const [id, cantidad] of _carro) {
     const ex = _examenes.find(e => e.id === id);
     if (!ex) continue;
-    const precioUnit = _descuento10 ? precioDesc(ex) : (ex.precio || 0);
-    const subtotal   = precioUnit * cantidad;
-    total     += (ex.precio || 0) * cantidad;
-    totalDesc += precioDesc(ex)   * cantidad;
-    body.push([ex.nombre, String(cantidad), fmtCLP(precioUnit), fmtCLP(subtotal)]);
+    const precioNormal  = ex.precio || 0;
+    const precioConDesc = hayDesc ? Math.round(precioNormal * (1 - _descuentoPct / 100)) : precioNormal;
+    const subtotal      = precioConDesc * cantidad;
+    total     += precioNormal  * cantidad;
+    totalDesc += precioConDesc * cantidad;
+    body.push([ex.nombre, String(cantidad), fmtCLP(precioConDesc), fmtCLP(subtotal)]);
   }
 
-  const descuento  = _descuento10 ? total - totalDesc : 0;
-  const totalFinal = _descuento10 ? totalDesc : total;
+  const descuento  = hayDesc ? total - totalDesc : 0;
+  const totalFinal = hayDesc ? totalDesc : total;
 
-  const foot = _descuento10
+  const foot = hayDesc
     ? [
         ['', '', 'Subtotal', fmtCLP(total)],
-        ['', '', 'Descuento (10%)', '-' + fmtCLP(descuento)],
+        ['', '', `Descuento (${_descuentoPct}%)`, '-' + fmtCLP(descuento)],
         ['', '', 'TOTAL', fmtCLP(totalFinal)],
       ]
     : [['', '', 'TOTAL', fmtCLP(totalFinal)]];
