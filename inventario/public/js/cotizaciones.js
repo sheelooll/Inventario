@@ -331,7 +331,7 @@ async function generarPDF() {
 
 // ===== Helpers =====
 function fmtCLP(n) {
-  return '$' + Number(n || 0).toLocaleString('es-CL');
+  return '$' + Math.round(Number(n || 0)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
 function esc(s) {
