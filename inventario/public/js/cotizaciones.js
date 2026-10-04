@@ -296,7 +296,6 @@ async function generarPDF() {
   const foot = hayDesc
     ? [
         ['', '', 'Total sin Tarjeta Vecino', fmtCLP(total)],
-        ['', '', 'Descuento Tarjeta Vecino', '−' + fmtCLP(descuento)],
         ['', '', 'Total con Tarjeta Vecino', fmtCLP(totalFinal)],
       ]
     : [['', '', 'TOTAL', fmtCLP(totalFinal)]];
