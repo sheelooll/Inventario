@@ -52,7 +52,7 @@ function abrirFormUsuario() {
   abrirModal(`
     <div class="modal-header">
       <h3>Nuevo Usuario</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-usuario" novalidate>
       <div class="form-row">

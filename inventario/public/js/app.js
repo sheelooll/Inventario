@@ -35,10 +35,16 @@ function mostrarApp(usuario) {
   loginScreen.classList.add('hidden');
   appEl.classList.remove('hidden');
   userDisplay.textContent = usuario.nombre;
+  const avatar = document.getElementById('user-avatar');
+  if (avatar) {
+    const nombre = (usuario.nombre || '').trim();
+    avatar.textContent = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join('').toUpperCase() || '--';
+    avatar.title = nombre;
+  }
 
   // Solo admins ven todo; usuarios normales solo ven Inventario
   const soloAdmin = ['movimientos', 'categorias', 'cotizaciones', 'reportes', 'usuarios'];
-  document.querySelectorAll('.nav-link').forEach(a => {
+  document.querySelectorAll('.nav-link[data-view]').forEach(a => {
     const esAdminOnly = soloAdmin.includes(a.dataset.view);
     a.parentElement.style.display = (esAdminOnly && usuario.rol !== 'admin') ? 'none' : '';
   });
@@ -59,7 +65,7 @@ function navegarA(vista) {
   document.querySelectorAll('.view').forEach(s => s.classList.add('hidden'));
   document.getElementById(`view-${vista}`).classList.remove('hidden');
 
-  sidebar.classList.remove('open');
+  cerrarMenuMovil();
   history.replaceState(null, '', `#${vista}`);
 
   if (!iniciadas.has(vista)) {
@@ -71,15 +77,36 @@ function navegarA(vista) {
 }
 
 // Navegación por links del menú
-document.querySelectorAll('.nav-link').forEach(a => {
+document.querySelectorAll('.nav-link[data-view]').forEach(a => {
   a.addEventListener('click', e => { e.preventDefault(); navegarA(a.dataset.view); });
 });
 
 // Hamburguesa en móvil
-navToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
+const navToggleIcon = document.getElementById('nav-toggle-icon');
+function cerrarMenuMovil() {
+  sidebar.classList.remove('open');
+  if (navToggleIcon) navToggleIcon.textContent = 'menu';
+}
+navToggle.addEventListener('click', () => {
+  const abierto = sidebar.classList.toggle('open');
+  if (navToggleIcon) navToggleIcon.textContent = abierto ? 'close' : 'menu';
+});
 
-// Cerrar sesión
+// Cerrar sesión (escritorio y menú móvil)
 btnLogout.addEventListener('click', () => cerrarSesion(mostrarLogin));
+document.getElementById('btn-logout-mobile')?.addEventListener('click', e => {
+  e.preventDefault();
+  cerrarMenuMovil();
+  cerrarSesion(mostrarLogin);
+});
+
+// Tema claro / oscuro
+document.querySelectorAll('.theme-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const oscuro = document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('inv-theme', oscuro ? 'dark' : 'light'); } catch (e) {}
+  });
+});
 
 // Exponer para otros módulos
 window.navegarA = navegarA;

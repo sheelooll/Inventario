@@ -53,9 +53,9 @@ function renderAlertas() {
   const alertaVenc = _productos.filter(p => p.por_vencer || p.vencido).length;
   const el = document.getElementById('inventario-alertas');
   const chips = [];
-  if (criticos)   chips.push(`<div class="alerta-chip critico">🔴 ${criticos} en crítico</div>`);
-  if (bajos)      chips.push(`<div class="alerta-chip bajo">🟡 ${bajos} en bajo</div>`);
-  if (alertaVenc) chips.push(`<div class="alerta-chip vencer">🔵 ${alertaVenc} vencido/por vencer</div>`);
+  if (criticos)   chips.push(`<div class="alerta-chip critico">${criticos} en crítico</div>`);
+  if (bajos)      chips.push(`<div class="alerta-chip bajo">${bajos} en bajo</div>`);
+  if (alertaVenc) chips.push(`<div class="alerta-chip vencer">${alertaVenc} vencido/por vencer</div>`);
   el.innerHTML = chips.join('');
 }
 
@@ -104,7 +104,7 @@ function renderTabla() {
 
     const thumb = p.foto
       ? `<img src="${p.foto}" class="prod-thumb prod-thumb-click" alt="${esc(p.nombre)}" loading="lazy" onclick="window._verFoto('${p.foto}','${esc(p.nombre)}')">`
-      : `<div class="prod-thumb-placeholder" title="Sin foto">📷</div>`;
+      : `<div class="prod-thumb-placeholder" title="Sin foto"><span class="material-symbols-outlined">image</span></div>`;
 
     if (tieneMultiplesLotes) {
       // ── Fila resumen del producto (siempre visible) ──────────────────────
@@ -123,7 +123,7 @@ function renderTabla() {
             <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',null)">−</button>
             <button class="btn btn-sq btn-lotes-toggle${estaExpandido ? ' activo' : ''}" title="${estaExpandido ? 'Colapsar lotes' : 'Ver lotes'}" onclick="window._toggleLotes('${p.id}')">${estaExpandido ? '▲' : '▼'} ${totalLotes} lotes</button>
             <button class="btn btn-sq btn-wide btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
-            <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>
+            <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')"><span class="material-symbols-outlined">delete</span></button>
           </td>
         </tr>
       `);
@@ -156,8 +156,8 @@ function renderTabla() {
               <td class="acciones">
                 <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',${loteArg})">+</button>
                 <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
-                <button class="btn btn-sq btn-edit btn-secondary" title="Editar lote" onclick="window._editItem('${p.id}',${loteArg})">✎</button>
-                <button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')">🗑</button>
+                <button class="btn btn-sq btn-edit btn-secondary" title="Editar lote" onclick="window._editItem('${p.id}',${loteArg})"><span class="material-symbols-outlined">edit</span></button>
+                <button class="btn btn-sq btn-trash" title="Eliminar lote" onclick="window._delLote('${loteId}','${p.id}')"><span class="material-symbols-outlined">delete</span></button>
               </td>
             </tr>
           `);
@@ -205,9 +205,9 @@ function renderTabla() {
           <td class="acciones">
             <button class="btn btn-sq btn-success" title="Sumar stock" onclick="window._addStock('${p.id}',${loteArg})">+</button>
             <button class="btn btn-sq btn-danger"  title="Restar stock" onclick="window._subStock('${p.id}',${loteArg})">−</button>
-            <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})">✎ Editar</button>
+            <button class="btn btn-sq btn-edit btn-secondary" title="Editar producto y lote" onclick="window._editItem('${p.id}',${loteArg})"><span class="material-symbols-outlined">edit</span>Editar</button>
             <button class="btn btn-sq btn-wide btn-secondary" title="Agregar lote" onclick="window._addLote('${p.id}')">＋ Lote</button>
-            <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')">🗑</button>
+            <button class="btn btn-sq btn-trash" title="Eliminar producto" onclick="window._delProducto('${p.id}')"><span class="material-symbols-outlined">delete</span></button>
           </td>
         </tr>
       `);
@@ -228,7 +228,7 @@ function abrirFormProducto(id) {
   abrirModal(`
     <div class="modal-header">
       <h3>${titulo}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-producto" novalidate>
       <div class="form-row">
@@ -279,7 +279,7 @@ function abrirFormProducto(id) {
             ? `<img src="${prod.foto}?t=${Date.now()}" class="foto-preview" id="foto-preview-img" alt="foto">`
             : `<div id="foto-preview-img" style="display:none"></div>`}
           <div id="foto-placeholder" style="${prod?.foto ? 'display:none' : ''}; font-size:.85rem; color:var(--color-text-muted)">
-            📷 Haz clic o arrastra una imagen aquí
+            Haz clic o arrastra una imagen aquí
           </div>
           <input type="file" id="foto-input" accept="image/*" style="display:none">
         </div>
@@ -348,7 +348,7 @@ function abrirModalMovimiento(productoId, loteId, tipoPreset) {
   abrirModal(`
     <div class="modal-header">
       <h3>Registrar Movimiento</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     ${prod.foto ? `<img src="${prod.foto}" style="width:100%;max-height:90px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:.75rem">` : ''}
     <p style="margin-bottom:.75rem">
@@ -463,7 +463,7 @@ function abrirModalNuevoLote(productoId) {
   abrirModal(`
     <div class="modal-header">
       <h3>Agregar lote — ${esc(prod.nombre)}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-nuevo-lote" novalidate>
       <div class="form-row">
@@ -536,7 +536,7 @@ function abrirModalEditarItem(productoId, loteId) {
   abrirModal(`
     <div class="modal-header">
       <h3>Editar — ${esc(prod.nombre)}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-editar-item" novalidate>
       <h4 class="edit-section-title">Producto</h4>
@@ -591,7 +591,7 @@ function abrirModalEditarItem(productoId, loteId) {
             ? `<img src="${prod.foto}?t=${Date.now()}" class="foto-preview" id="foto-preview-img" alt="foto">`
             : `<div id="foto-preview-img" style="display:none"></div>`}
           <div id="foto-placeholder" style="${prod.foto ? 'display:none' : ''}; font-size:.85rem; color:var(--color-text-muted)">
-            📷 Haz clic o arrastra una imagen aquí
+            Haz clic o arrastra una imagen aquí
           </div>
           <input type="file" id="foto-input" accept="image/*" style="display:none">
         </div>
@@ -730,8 +730,8 @@ function abrirModalImportarExcel() {
 
   abrirModal(`
     <div class="modal-header">
-      <h3>📂 Importar productos desde Excel</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <h3>Importar productos desde Excel</h3>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <p style="font-size:.85rem;color:var(--color-text-muted);margin-bottom:.75rem">
       El archivo debe tener los nombres de los productos en la <strong>columna A</strong> (la primera fila se omite como encabezado).
