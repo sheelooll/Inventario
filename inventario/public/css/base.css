@@ -1,13 +1,13 @@
 /* ══════════════════════════════════════════════════
-   DESIGN TOKENS — Rosa Pastel (mismo sistema que TamaraInventory)
+   DESIGN TOKENS — Celeste (estructura de TamaraInventory)
    Modo claro: :root  |  Modo oscuro: html.dark
    ══════════════════════════════════════════════════ */
 :root {
   /* Paleta base (canales RGB para poder usar opacidad) */
-  --c-primary: 244 166 193;
+  --c-primary: 125 200 240;
   --c-on-primary: 255 255 255;
-  --c-primary-container: 252 228 236;
-  --c-on-primary-container: 74 16 40;
+  --c-primary-container: 224 242 252;
+  --c-on-primary-container: 6 50 80;
   --c-secondary: 246 193 119;
   --c-secondary-container: 255 243 220;
   --c-on-secondary-container: 74 48 0;
@@ -17,28 +17,28 @@
   --c-error: 229 115 115;
   --c-error-container: 253 226 226;
   --c-on-error-container: 122 21 21;
-  --c-surface: 255 247 250;
+  --c-surface: 247 251 255;
   --c-surface-container-lowest: 255 255 255;
-  --c-surface-container-low: 253 238 243;
-  --c-surface-container: 253 238 243;
-  --c-surface-container-high: 250 226 236;
-  --c-surface-container-highest: 248 215 227;
-  --c-on-surface: 74 58 64;
-  --c-on-surface-variant: 107 90 98;
-  --c-outline: 201 168 184;
-  --c-outline-variant: 248 215 227;
-  --c-cta: 176 64 112;
+  --c-surface-container-low: 236 246 253;
+  --c-surface-container: 236 246 253;
+  --c-surface-container-high: 222 239 251;
+  --c-surface-container-highest: 207 231 248;
+  --c-on-surface: 30 50 66;
+  --c-on-surface-variant: 80 104 122;
+  --c-outline: 150 185 210;
+  --c-outline-variant: 207 231 248;
+  --c-cta: 2 120 185;
   --c-warn-text: 146 96 10;
   --c-error-text: 197 48 48;
   --c-success-text: 0 110 60;
-  --c-info: 120 150 210;
-  --c-info-container: 230 238 252;
-  --c-info-text: 50 80 150;
+  --c-info: 99 102 241;
+  --c-info-container: 232 233 253;
+  --c-info-text: 67 56 202;
   --c-violet-container: 240 230 252;
   --c-violet-text: 110 60 160;
   --c-input-bg: 255 255 255;
-  --c-input-border: 232 180 200;
-  --c-input-focus: 217 106 147;
+  --c-input-border: 170 210 235;
+  --c-input-focus: 14 165 233;
 
   /* Alias que usa el JS existente (no cambiar nombres) */
   --color-primary:     rgb(var(--c-cta));
@@ -68,9 +68,9 @@
   --blur:       blur(18px);
   --blur-sm:    blur(8px);
 
-  --shadow-sm:  0 1px 2px rgb(74 16 40 / .06);
-  --shadow-md:  0 4px 14px rgb(74 16 40 / .08);
-  --shadow-lg:  0 12px 32px rgb(74 16 40 / .14);
+  --shadow-sm:  0 1px 2px rgb(6 50 80 / .06);
+  --shadow-md:  0 4px 14px rgb(6 50 80 / .08);
+  --shadow-lg:  0 12px 32px rgb(6 50 80 / .14);
 
   --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -79,10 +79,10 @@
 }
 
 html.dark {
-  --c-primary: 244 166 193;
-  --c-on-primary: 74 16 40;
-  --c-primary-container: 139 46 79;
-  --c-on-primary-container: 252 228 236;
+  --c-primary: 125 200 240;
+  --c-on-primary: 6 40 64;
+  --c-primary-container: 12 74 110;
+  --c-on-primary-container: 224 242 252;
   --c-secondary: 246 193 119;
   --c-secondary-container: 107 72 0;
   --c-on-secondary-container: 255 243 220;
@@ -92,28 +92,28 @@ html.dark {
   --c-error: 242 139 130;
   --c-error-container: 92 26 24;
   --c-on-error-container: 255 215 212;
-  --c-surface: 42 34 39;
-  --c-surface-container-lowest: 26 21 24;
-  --c-surface-container-low: 42 34 39;
-  --c-surface-container: 53 43 49;
-  --c-surface-container-high: 61 48 57;
-  --c-surface-container-highest: 71 53 64;
-  --c-on-surface: 252 228 236;
-  --c-on-surface-variant: 196 168 181;
-  --c-outline: 154 122 136;
-  --c-outline-variant: 74 58 66;
-  --c-cta: 244 166 193;
+  --c-surface: 20 32 42;
+  --c-surface-container-lowest: 12 21 29;
+  --c-surface-container-low: 20 32 42;
+  --c-surface-container: 28 43 56;
+  --c-surface-container-high: 36 54 69;
+  --c-surface-container-highest: 45 66 84;
+  --c-on-surface: 224 242 252;
+  --c-on-surface-variant: 160 190 210;
+  --c-outline: 110 140 162;
+  --c-outline-variant: 45 66 84;
+  --c-cta: 125 200 240;
   --c-warn-text: 246 193 119;
   --c-error-text: 242 139 130;
   --c-success-text: 129 201 149;
-  --c-info: 150 180 235;
-  --c-info-container: 35 45 70;
-  --c-info-text: 170 195 245;
+  --c-info: 150 155 245;
+  --c-info-container: 40 42 80;
+  --c-info-text: 180 185 250;
   --c-violet-container: 55 40 75;
   --c-violet-text: 205 180 245;
-  --c-input-bg: 53 43 49;
-  --c-input-border: 74 58 66;
-  --c-input-focus: 244 166 193;
+  --c-input-bg: 28 43 56;
+  --c-input-border: 45 66 84;
+  --c-input-focus: 125 200 240;
 
   --shadow-sm:  0 1px 2px rgb(0 0 0 / .25);
   --shadow-md:  0 4px 14px rgb(0 0 0 / .3);
