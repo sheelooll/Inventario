@@ -203,6 +203,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--c-cta)); }
 }
 
 .tabla td.text-right { font-variant-numeric: tabular-nums; }
+.tabla td.costo-cell { white-space: nowrap; }
+.tabla td.costo-vacio { color: rgb(var(--c-outline)); }
 .tabla tbody tr:last-child td { border-bottom: none; }
 .tabla tbody tr { transition: background .12s; }
 .tabla tbody tr:hover { background: rgb(var(--c-surface-container-high) / .6); }

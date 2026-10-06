@@ -20,6 +20,7 @@ export function exportarInventarioExcel(productos) {
     'Nombre':          p.nombre,
     'Categoría':       p.categoria_nombre,
     'Cantidad':        p.cantidad,
+    'Costo Unitario':  p.costo_unitario ?? '',
     'Estado':          estadoTexto(p),
     'Umbral Crítico':  p.umbral_critico,
     'Umbral Bajo':     p.umbral_bajo,

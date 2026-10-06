@@ -1,5 +1,5 @@
 import { productos as prodApi, categorias as catApi, movimientos as movApi, lotes as lotesApi, ubicaciones as ubApi } from './api.js';
-import { toast, abrirModal, cerrarModal, confirmar, estadoBadge, fmtFechaSolo, fmtNum } from './ui.js';
+import { toast, abrirModal, cerrarModal, confirmar, estadoBadge, fmtFechaSolo, fmtNum, fmtCosto, parseCosto } from './ui.js';
 
 let _productos        = [];
 let _categorias       = [];
@@ -85,7 +85,7 @@ function renderTabla() {
   const tbody = document.getElementById('tbody-inventario');
   const lista = filtrados();
   if (!lista.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="8">No hay productos que mostrar</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="9">No hay productos que mostrar</td></tr>';
     return;
   }
 
@@ -115,6 +115,7 @@ function renderTabla() {
           <td><strong>${esc(p.nombre)}</strong></td>
           <td>${esc(p.categoria_nombre)}</td>
           <td class="text-right"><strong>${fmtNum(cantTotal)}</strong></td>
+          <td class="text-right costo-cell${p.costo_unitario == null ? ' costo-vacio' : ''}">${fmtCosto(p.costo_unitario)}</td>
           <td>${estadoBadge(estadoProd, false, false)}</td>
           <td></td>
           <td></td>
@@ -150,6 +151,7 @@ function renderTabla() {
               <td>${nombreLote}</td>
               <td></td>
               <td class="text-right">${fmtNum(cantLote)}</td>
+              <td></td>
               <td>${estadoBadge(estadoLote, vencido, porVencer)}</td>
               <td>${fmtFechaSolo(vencLote)}</td>
               <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>
@@ -169,7 +171,7 @@ function renderTabla() {
             <td></td>
             <td colspan="2" class="prod-lotes-total-label">Total (${totalLotes} lotes)</td>
             <td class="text-right prod-lotes-total-value">${fmtNum(cantTotal)}</td>
-            <td colspan="4"></td>
+            <td colspan="5"></td>
           </tr>
         `);
       }
@@ -199,6 +201,7 @@ function renderTabla() {
           <td>${nombreCell}</td>
           <td>${esc(p.categoria_nombre)}</td>
           <td class="text-right">${fmtNum(cantLote)}</td>
+          <td class="text-right costo-cell${p.costo_unitario == null ? ' costo-vacio' : ''}">${fmtCosto(p.costo_unitario)}</td>
           <td>${estadoBadge(estadoLote, vencido, porVencer)}</td>
           <td>${fmtFechaSolo(vencLote)}</td>
           <td>${ubicNombre ? `<span class="lote-badge">${esc(ubicNombre)}</span>` : ''}</td>
@@ -270,6 +273,10 @@ function abrirFormProducto(id) {
           <label>Umbral bajo</label>
           <input type="number" name="umbral_bajo" value="${prod?.umbral_bajo||0}" min="0">
         </div>
+        <div class="form-group">
+          <label>Costo unitario (CLP)</label>
+          <input type="text" inputmode="decimal" name="costo_unitario" value="${prod?.costo_unitario ?? ''}" placeholder="Opcional — puedes llenarlo después">
+        </div>
       </div>
 
       <div class="form-group" style="margin-top:.25rem">
@@ -303,6 +310,7 @@ function abrirFormProducto(id) {
     errEl.classList.add('hidden');
 
     try {
+      data.costo_unitario = parseCosto(data.costo_unitario);
       let prodId = prod?.id;
       if (prod) {
         await prodApi.editar(prod.id, data);
@@ -557,6 +565,10 @@ function abrirModalEditarItem(productoId, loteId) {
           <label>Umbral bajo</label>
           <input type="number" name="umbral_bajo" value="${prod.umbral_bajo||0}" min="0">
         </div>
+        <div class="form-group">
+          <label>Costo unitario (CLP)</label>
+          <input type="text" inputmode="decimal" name="costo_unitario" value="${prod.costo_unitario ?? ''}" placeholder="Opcional — puedes llenarlo después">
+        </div>
       </div>
 
       ${lote ? `
@@ -613,11 +625,13 @@ function abrirModalEditarItem(productoId, loteId) {
     const errEl = document.getElementById('form-item-error');
     errEl.classList.add('hidden');
     try {
+      const costo = parseCosto(raw.costo_unitario);
       await prodApi.editar(productoId, {
         nombre:         raw.nombre,
         categoria_id:   raw.categoria_id,
         umbral_critico: raw.umbral_critico,
         umbral_bajo:    raw.umbral_bajo,
+        costo_unitario: costo,
       });
       if (lote) {
         await lotesApi.editar(loteId, {

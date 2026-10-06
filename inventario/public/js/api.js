@@ -312,6 +312,7 @@ export const productos = {
       cantidad:          0,
       umbral_critico:    Number(data.umbral_critico)    || 0,
       umbral_bajo:       Number(data.umbral_bajo)       || 0,
+      costo_unitario:    data.costo_unitario ?? null,
       vencimiento: null, lote: null, foto: null,
       activo:      true,
       creado_en:   serverTimestamp(),
@@ -321,13 +322,16 @@ export const productos = {
 
   editar: async (id, data) => {
     const catSnap = await getDoc(doc(db, 'categorias', String(data.categoria_id)));
-    await updateDoc(doc(db, 'productos', String(id)), {
+    const cambios = {
       nombre:            data.nombre,
       categoria_id:      String(data.categoria_id),
       categoria_nombre:  catSnap.data()?.nombre || '',
       umbral_critico:    Number(data.umbral_critico)    || 0,
       umbral_bajo:       Number(data.umbral_bajo)       || 0,
-    });
+    };
+    // Solo se toca el costo si el formulario lo envía (así no se borra por accidente)
+    if ('costo_unitario' in data) cambios.costo_unitario = data.costo_unitario ?? null;
+    await updateDoc(doc(db, 'productos', String(id)), cambios);
     return { ok: true };
   },
 
