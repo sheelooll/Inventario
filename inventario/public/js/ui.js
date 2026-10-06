@@ -22,6 +22,28 @@ export function fmtNum(n) {
   return Number(n).toLocaleString('es-CL');
 }
 
+// Pesos chilenos; devuelve '—' si no hay valor
+export function fmtCosto(n) {
+  if (n == null || n === '' || isNaN(Number(n))) return '—';
+  return '$' + Number(n).toLocaleString('es-CL', { maximumFractionDigits: 2 });
+}
+
+// Convierte el texto de un input a número o null (vacío = sin costo).
+// Acepta "1500", "$1.500", "1.250,5", "12,75" y "12.5".
+export function parseCosto(v) {
+  if (v == null) return null;
+  let t = String(v).trim().replace(/\$/g, '').replace(/\s/g, '');
+  if (t === '') return null;
+  if (t.includes(',')) {
+    t = t.replace(/\./g, '').replace(',', '.');          // 1.250,5 → 1250.5
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(t)) {
+    t = t.replace(/\./g, '');                             // 1.500 → 1500
+  }
+  const n = Number(t);
+  if (isNaN(n) || n < 0) throw new Error('El costo unitario debe ser un número positivo (ej: 1500 o 1.250,50)');
+  return n;
+}
+
 export function nombreMes(n) { return MESES[n - 1] || ''; }
 
 export function estadoBadge(estado, vencido, por_vencer) {
