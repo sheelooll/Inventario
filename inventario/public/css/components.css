@@ -183,7 +183,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--c-cta)); }
 .tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
 
 .tabla th {
-  padding: .65rem 1rem;
+  padding: .65rem .75rem;
   text-align: left;
   font-size: 11px; font-weight: 600;
   color: rgb(var(--c-on-surface-variant));
@@ -196,7 +196,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--c-cta)); }
 .tabla th.text-center { text-align: center; }
 
 .tabla td {
-  padding: .65rem 1rem;
+  padding: .65rem .75rem;
   border-bottom: 1px solid rgb(var(--c-outline-variant) / .7);
   vertical-align: middle;
   color: rgb(var(--c-on-surface));
@@ -213,7 +213,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: rgb(var(--c-cta)); }
 /* Celda de acciones: se mantiene como celda de tabla para que las filas queden alineadas */
 .tabla td.acciones { display: table-cell; text-align: center; white-space: nowrap; }
 .tabla td.acciones > * { vertical-align: middle; }
-.tabla td.acciones > * + * { margin-left: .4rem; }
+.tabla td.acciones > * + * { margin-left: .3rem; }
+.tabla td.acciones { padding-right: 1rem; }
 
 @media (max-width: 760px) {
   /* En móvil la tabla se desplaza horizontalmente en vez de aplastarse */
