@@ -45,7 +45,7 @@ function abrirForm(id) {
   abrirModal(`
     <div class="modal-header">
       <h3>${cat ? 'Editar Categoría' : 'Nueva Categoría'}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-cat" novalidate>
       <div class="form-group">
@@ -104,7 +104,7 @@ function abrirFormUb(id) {
   abrirModal(`
     <div class="modal-header">
       <h3>${ub ? 'Editar Ubicación' : 'Nueva Ubicación'}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-ub" novalidate>
       <div class="form-group">

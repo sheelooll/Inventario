@@ -94,7 +94,7 @@ export function confirmar(mensaje) {
     const cerrar = abrirModal(`
       <div class="modal-header">
         <h3>Confirmar acción</h3>
-        <button class="modal-close" aria-label="Cerrar">✕</button>
+        <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
       </div>
       <p style="margin-bottom:1.25rem">${mensaje}</p>
       <div class="modal-footer">

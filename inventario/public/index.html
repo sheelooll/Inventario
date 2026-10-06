@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Laboratorio Inventory</title>
+  <script>
+    // Aplica el tema guardado antes de pintar para evitar parpadeo
+    try { if (localStorage.getItem('inv-theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
@@ -14,9 +22,15 @@
 
 <!-- ===== LOGIN ===== -->
 <div id="login-screen" class="login-screen">
+  <div class="login-theme">
+      <button type="button" class="icon-btn theme-toggle" aria-label="Alternar tema claro/oscuro" title="Cambiar tema">
+        <span class="material-symbols-outlined theme-icon-dark">dark_mode</span>
+        <span class="material-symbols-outlined theme-icon-light">light_mode</span>
+      </button>
+  </div>
   <div class="login-card">
     <div class="login-logo">
-      <div class="login-icon">🔬</div>
+      <div class="login-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M12 14L20 9L28 14L20 19L12 14Z" fill="#F4A6C1"/><path d="M12 17.5L20 22.5V31L12 26V17.5Z" fill="#FCE4EC"/><path d="M28 17.5L20 22.5V31L28 26V17.5Z" fill="#EC8FB0"/><circle cx="20" cy="19" r="2.5" fill="#C2577A"/></svg></div>
       <h2>Laboratorio Inventory</h2>
       <p>Control de Stock · Laboratorio</p>
     </div>
@@ -39,27 +53,44 @@
 <div id="app" class="app hidden">
   <header class="header">
     <div class="header-left">
-      <button id="nav-toggle" class="nav-toggle" aria-label="Abrir menú">☰</button>
-      <span class="header-title">Laboratorio Inventory</span>
+      <div class="header-brand">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" aria-hidden="true"><rect width="40" height="40" rx="10" fill="#F4A6C1"/><path d="M12 14L20 9L28 14L20 19L12 14Z" fill="#FFFFFF"/><path d="M12 17.5L20 22.5V31L12 26V17.5Z" fill="#FCE4EC"/><path d="M28 17.5L20 22.5V31L28 26V17.5Z" fill="#EC8FB0"/><circle cx="20" cy="19" r="2.5" fill="#C2577A"/></svg>
+        <div class="header-brand-text">
+          <span class="header-title">Laboratorio Inventory</span>
+          <span class="header-subtitle">Control de Stock · Laboratorio</span>
+        </div>
+      </div>
     </div>
+
+    <nav id="sidebar" class="sidebar" aria-label="Navegación principal">
+      <ul class="nav-list">
+        <li><a href="#inventario"   class="nav-link" data-view="inventario"><span class="material-symbols-outlined">inventory_2</span><span>Inventario</span></a></li>
+        <li><a href="#movimientos"  class="nav-link" data-view="movimientos"><span class="material-symbols-outlined">swap_horiz</span><span>Movimientos</span></a></li>
+        <li><a href="#categorias"   class="nav-link" data-view="categorias"><span class="material-symbols-outlined">sell</span><span>Categorías</span></a></li>
+        <li><a href="#cotizaciones" class="nav-link" data-view="cotizaciones"><span class="material-symbols-outlined">request_quote</span><span>Cotizaciones</span></a></li>
+        <li><a href="#reportes"     class="nav-link" data-view="reportes"><span class="material-symbols-outlined">analytics</span><span>Reportes</span></a></li>
+        <li><a href="#usuarios"     class="nav-link" data-view="usuarios"><span class="material-symbols-outlined">group</span><span>Usuarios</span></a></li>
+        <li class="nav-logout-item"><a href="#" class="nav-link" id="btn-logout-mobile"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></a></li>
+      </ul>
+    </nav>
+
     <div class="header-right">
+      <button type="button" class="icon-btn theme-toggle" aria-label="Alternar tema claro/oscuro" title="Cambiar tema">
+        <span class="material-symbols-outlined theme-icon-dark">dark_mode</span>
+        <span class="material-symbols-outlined theme-icon-light">light_mode</span>
+      </button>
       <span id="user-display" class="user-display"></span>
-      <button id="btn-logout" class="btn btn-ghost btn-sm">Cerrar sesión</button>
+      <span id="user-avatar" class="user-avatar" aria-hidden="true">--</span>
+      <button id="btn-logout" class="icon-btn danger btn-logout-desktop" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <span class="material-symbols-outlined">logout</span>
+      </button>
+      <button id="nav-toggle" class="icon-btn nav-toggle" aria-label="Abrir menú">
+        <span class="material-symbols-outlined" id="nav-toggle-icon">menu</span>
+      </button>
     </div>
   </header>
 
   <div class="layout">
-    <nav id="sidebar" class="sidebar">
-      <ul class="nav-list">
-        <li><a href="#inventario"  class="nav-link" data-view="inventario">📦 Inventario</a></li>
-        <li><a href="#movimientos" class="nav-link" data-view="movimientos">🔄 Movimientos</a></li>
-        <li><a href="#categorias"  class="nav-link" data-view="categorias">🏷️ Categorías</a></li>
-        <li><a href="#cotizaciones" class="nav-link" data-view="cotizaciones">🧾 Cotizaciones</a></li>
-        <li><a href="#reportes"    class="nav-link" data-view="reportes">📊 Reportes</a></li>
-        <li><a href="#usuarios"    class="nav-link" data-view="usuarios">👥 Usuarios</a></li>
-      </ul>
-    </nav>
-
     <main id="main-content" class="main-content">
 
       <!-- ===== INVENTARIO ===== -->
@@ -67,8 +98,8 @@
         <div class="view-header">
           <h2>Inventario</h2>
           <div style="display:flex;gap:.5rem">
-            <button id="btn-importar-excel" class="btn btn-secondary">📂 Importar Excel</button>
-            <button id="btn-nuevo-producto" class="btn btn-primary">+ Nuevo Producto</button>
+            <button id="btn-importar-excel" class="btn btn-secondary"><span class="material-symbols-outlined">upload_file</span>Importar Excel</button>
+            <button id="btn-nuevo-producto" class="btn btn-primary"><span class="material-symbols-outlined">add_circle</span>Nuevo Producto</button>
           </div>
         </div>
         <div id="inventario-alertas" class="alertas-banner"></div>
@@ -85,7 +116,7 @@
           <select id="filtro-categoria" class="select-filtro">
             <option value="">Todas las categorías</option>
           </select>
-          <button id="btn-exportar-inventario" class="btn btn-secondary btn-sm">⬇ Excel</button>
+          <button id="btn-exportar-inventario" class="btn btn-secondary btn-sm"><span class="material-symbols-outlined">download</span>Excel</button>
         </div>
         <div class="tabla-container">
           <table class="tabla">
@@ -110,7 +141,7 @@
       <section id="view-categorias" class="view hidden">
         <div class="view-header">
           <h2>Categorías</h2>
-          <button id="btn-nueva-categoria" class="btn btn-primary">+ Nueva Categoría</button>
+          <button id="btn-nueva-categoria" class="btn btn-primary"><span class="material-symbols-outlined">add_circle</span>Nueva Categoría</button>
         </div>
         <div class="tabla-container">
           <table class="tabla">
@@ -127,7 +158,7 @@
 
         <div class="view-header" style="margin-top:2rem">
           <h2>Ubicaciones</h2>
-          <button id="btn-nueva-ubicacion" class="btn btn-primary">+ Nueva Ubicación</button>
+          <button id="btn-nueva-ubicacion" class="btn btn-primary"><span class="material-symbols-outlined">add_circle</span>Nueva Ubicación</button>
         </div>
         <div class="tabla-container">
           <table class="tabla">
@@ -147,8 +178,8 @@
         <div class="view-header">
           <h2>Movimientos</h2>
           <div style="display:flex;gap:.5rem">
-            <button id="btn-ingreso-caja" class="btn btn-primary">📥 Ingreso Masivo</button>
-            <button id="btn-exportar-movimientos" class="btn btn-secondary btn-sm">⬇ Excel</button>
+            <button id="btn-ingreso-caja" class="btn btn-primary"><span class="material-symbols-outlined">move_to_inbox</span>Ingreso Masivo</button>
+            <button id="btn-exportar-movimientos" class="btn btn-secondary btn-sm"><span class="material-symbols-outlined">download</span>Excel</button>
           </div>
         </div>
         <div class="filtros-bar">
@@ -188,14 +219,14 @@
       <section id="view-cotizaciones" class="view hidden">
         <div class="view-header">
           <h2>Cotizaciones</h2>
-          <button id="btn-nuevo-examen" class="btn btn-primary">+ Nuevo examen</button>
+          <button id="btn-nuevo-examen" class="btn btn-primary"><span class="material-symbols-outlined">add_circle</span>Nuevo examen</button>
         </div>
 
         <div class="cotizacion-layout">
           <!-- Catálogo de exámenes -->
           <div class="cotizacion-catalogo">
             <div class="filtros-bar" style="margin-bottom:1rem">
-              <input type="text" id="cot-buscar" class="input-buscar" placeholder="🔍 Buscar examen...">
+              <input type="text" id="cot-buscar" class="input-buscar" placeholder="Buscar examen...">
             </div>
             <div class="tabla-container">
               <table class="tabla tabla-sm">
@@ -213,7 +244,7 @@
 
           <!-- Cotización actual -->
           <aside class="cotizacion-carro">
-            <h3 class="cotizacion-carro-titulo">🧾 Cotización</h3>
+            <h3 class="cotizacion-carro-titulo"><span class="material-symbols-outlined">receipt_long</span>Cotización</h3>
             <div class="form-group">
               <label>Cliente / Paciente</label>
               <input type="text" id="cot-cliente" placeholder="Nombre (opcional)">
@@ -235,7 +266,7 @@
             </div>
             <div class="tarjeta-vecino-box">
               <div class="tarjeta-vecino-header">
-                <span>🪪 ¿Tiene Tarjeta de Vecino?</span>
+                <span>¿Tiene Tarjeta de Vecino?</span>
                 <label class="tv-toggle">
                   <input type="checkbox" id="chk-tarjeta-vecino">
                   <span class="tv-slider"></span>
@@ -250,7 +281,7 @@
               </div>
             </div>
             <div class="cotizacion-acciones">
-              <button id="btn-descargar-pdf" class="btn btn-primary btn-full">⬇ Descargar PDF</button>
+              <button id="btn-descargar-pdf" class="btn btn-primary btn-full"><span class="material-symbols-outlined">picture_as_pdf</span>Descargar PDF</button>
               <button id="btn-limpiar-cot" class="btn btn-secondary btn-full">Limpiar cotización</button>
             </div>
           </aside>
@@ -269,7 +300,7 @@
             <option value="">Todas las categorías</option>
           </select>
           <button id="btn-generar-reporte" class="btn btn-primary">Generar</button>
-          <button id="btn-exportar-reporte" class="btn btn-secondary btn-sm">⬇ Excel</button>
+          <button id="btn-exportar-reporte" class="btn btn-secondary btn-sm"><span class="material-symbols-outlined">download</span>Excel</button>
         </div>
         <div id="reporte-resumen"></div>
         <div class="tabla-container">
@@ -295,7 +326,7 @@
       <section id="view-usuarios" class="view hidden">
         <div class="view-header">
           <h2>Usuarios</h2>
-          <button id="btn-nuevo-usuario" class="btn btn-primary">+ Nuevo usuario</button>
+          <button id="btn-nuevo-usuario" class="btn btn-primary"><span class="material-symbols-outlined">person_add</span>Nuevo usuario</button>
         </div>
         <div class="tabla-container">
           <table class="tabla">

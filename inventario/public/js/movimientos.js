@@ -86,8 +86,8 @@ async function abrirModalIngresoCaja() {
 
   abrirModal(`
     <div class="modal-header">
-      <h3>📥 Ingreso Masivo</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <h3>Ingreso Masivo</h3>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
 
     <div class="form-group">

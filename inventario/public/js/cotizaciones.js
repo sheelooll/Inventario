@@ -62,8 +62,8 @@ function renderCatalogo() {
       <td class="text-right">${fmtCLP(e.precio)}</td>
       <td class="acciones">
         <button class="btn btn-sq btn-success" title="Agregar a cotización" onclick="window._cotAdd('${e.id}')">+</button>
-        <button class="btn btn-sq btn-edit btn-secondary" title="Editar examen" onclick="window._cotEdit('${e.id}')">✎</button>
-        <button class="btn btn-sq btn-trash" title="Eliminar examen" onclick="window._cotDelExamen('${e.id}')">🗑</button>
+        <button class="btn btn-sq btn-edit btn-secondary" title="Editar examen" onclick="window._cotEdit('${e.id}')"><span class="material-symbols-outlined">edit</span></button>
+        <button class="btn btn-sq btn-trash" title="Eliminar examen" onclick="window._cotDelExamen('${e.id}')"><span class="material-symbols-outlined">delete</span></button>
       </td>
     </tr>
   `).join('');
@@ -106,7 +106,7 @@ function renderCarro() {
           <button class="btn btn-sq btn-secondary" onclick="window._cotInc('${id}')">+</button>
         </div>
         <div class="cot-item-sub">${fmtCLP(subtotal)}</div>
-        <button class="btn btn-sq btn-trash" title="Quitar" onclick="window._cotQuitar('${id}')">🗑</button>
+        <button class="btn btn-sq btn-trash" title="Quitar" onclick="window._cotQuitar('${id}')"><span class="material-symbols-outlined">delete</span></button>
       </div>
     `);
   }
@@ -150,7 +150,7 @@ function abrirFormExamen(id) {
   abrirModal(`
     <div class="modal-header">
       <h3>${ex ? 'Editar examen' : 'Nuevo examen'}</h3>
-      <button class="modal-close" aria-label="Cerrar">✕</button>
+      <button class="modal-close" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button>
     </div>
     <form id="form-examen" novalidate>
       <div class="form-group">
