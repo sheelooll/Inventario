@@ -368,10 +368,11 @@ html.dark .nav-link.active {
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: 1.5rem 2rem 2.5rem;
+  padding: 1.5rem 1.5rem 2.5rem;
 }
+/* Usa todo el ancho de la pantalla para que la tabla quepa completa */
 .main-content > .view {
-  max-width: 1280px;
+  max-width: 1800px;
   margin: 0 auto;
 }
 
